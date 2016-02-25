@@ -5,6 +5,10 @@
 #include "dxHelloworld1.h"
 #include <d3d11.h>
 #include <DirectXColors.h>
+#include "cameraclass.h"
+#include "modelclass.h"
+#include "colorshaderclass.h"
+#include <DirectXMath.h>
 
 #pragma comment (lib, "d3d11.lib")
 
@@ -16,6 +20,9 @@ WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 UINT clientWidth = 800;
 UINT clientHeight = 600;
+const float SCREEN_DEPTH = 1000.0f;
+const float SCREEN_NEAR = 0.1f;
+D3DXMATRIX m_projectionMatrix;
 
 // d3d global declarations
 ID3D11Device*			pDevice	= nullptr;
@@ -25,6 +32,9 @@ ID3D11RenderTargetView*	pRenderTargetView = nullptr;
 D3D_DRIVER_TYPE			driverType;
 D3D_FEATURE_LEVEL		featureLevel;
 D3D11_VIEWPORT			viewport;
+CameraClass* m_Camera = nullptr;
+ModelClass* m_Model = nullptr;
+ColorShaderClass* m_ColorShader = nullptr;
 
 namespace Memory
 {
@@ -284,7 +294,7 @@ bool initD3D(HWND hWnd)
 	swapDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; // alt-enter fullscreen
 
 	HRESULT errorCode;
-	for (int i = 0; i < numDriverTypes; ++i)
+	for (unsigned i = 0; i < numDriverTypes; ++i)
 	{
 		errorCode = D3D11CreateDeviceAndSwapChain(NULL, driverTypes[i], NULL, createDeviceFlags,
 			featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &swapDesc, &pSwapChain, &pDevice,
@@ -312,9 +322,9 @@ bool initD3D(HWND hWnd)
 	{
 		MyDebug(_T("ERROR"));
 	}
+	Memory::SafeRelease(pBackBufferTex);
 
 	//BIND RENDER TARGET VIEW
-	//pImmediateContext->OMGetRenderTargets(1, &pRenderTargetView, nullptr); // I typed 'get' while I should type 'set'
 	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr); // depth stencil view is for shadow map
 
 	//VIEWPORT CREATION
@@ -327,6 +337,59 @@ bool initD3D(HWND hWnd)
 
 	// BIND VIEWPORT
 	pImmediateContext->RSSetViewports(1, &viewport);
+
+
+
+
+	// Create the camera object.
+	m_Camera = new CameraClass;
+	if (!m_Camera)
+	{
+		return false;
+	}
+
+	// Set the initial position of the camera.
+	m_Camera->SetPosition(0.0f, 0.0f, -10.0f);
+
+	// Create the model object.
+	m_Model = new ModelClass;
+	if (!m_Model)
+	{
+		return false;
+	}
+
+	// Initialize the model object.
+	result = m_Model->Initialize(pDevice);
+	if (!result)
+	{
+		MessageBox(hWnd, L"Could not initialize the model object.", L"Error", MB_OK);
+		return false;
+	}
+
+	// Create the color shader object.
+	m_ColorShader = new ColorShaderClass;
+	if (!m_ColorShader)
+	{
+		return false;
+	}
+
+	// Initialize the color shader object.
+	result = m_ColorShader->Initialize(pDevice, hWnd);
+	if (!result)
+	{
+		MessageBox(hWnd, L"Could not initialize the color shader object.", L"Error", MB_OK);
+		return false;
+	}
+
+	// Setup the projection matrix.
+	float fieldOfView = (float)3.14159265359 / 4.0f;
+	float screenAspect = (float)clientWidth / (float)clientHeight;
+
+	// Create the projection matrix for 3D rendering.
+	//D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
+	DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
+	m_projectionMatrix.set((const float*)&m.r);
+
 	return true;
 
 	//d3d = Direct3DCreate9(D3D_SDK_VERSION);    // create the Direct3D interface
@@ -348,14 +411,46 @@ bool initD3D(HWND hWnd)
 	//	&d3ddev);
 }
 
+bool errorshown = false;
 
 // this is the function used to render a single frame
 void render_frame(void)
 {
 	pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
 
-	pSwapChain->Present(0, 0);
 
+		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
+	bool result;
+
+
+	// Generate the view matrix based on the camera's position.
+	m_Camera->Render();
+
+	// Get the world, view, and projection matrices from the camera and d3d objects.
+	m_Camera->GetViewMatrix(viewMatrix);
+	//m_D3D->GetWorldMatrix(worldMatrix);
+	worldMatrix.identity();
+	//m_D3D->GetProjectionMatrix(projectionMatrix);
+	projectionMatrix = m_projectionMatrix;
+
+	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+	m_Model->Render(pImmediateContext);
+
+	// test code
+	viewMatrix.identity();
+	projectionMatrix.identity();
+	worldMatrix.identity();
+	// Render the model using the color shader.
+	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
+	if(!errorshown && !result)
+	{
+		errorshown = true;
+		//return false;
+		MyDebug(_T("render failed"));
+	}
+
+
+	pSwapChain->Present(0, 0);
 	//// clear the window to a deep blue
 	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 40, 100), 1.0f, 0);
 
@@ -372,11 +467,35 @@ void render_frame(void)
 // this is the function that cleans up Direct3D and COM
 void cleanD3D(void)
 {
+		// Release the color shader object.
+	if(m_ColorShader)
+	{
+		m_ColorShader->Shutdown();
+		delete m_ColorShader;
+		m_ColorShader = 0;
+	}
+
+	// Release the model object.
+	if(m_Model)
+	{
+		m_Model->Shutdown();
+		delete m_Model;
+		m_Model = 0;
+	}
+
+	// Release the camera object.
+	if(m_Camera)
+	{
+		delete m_Camera;
+		m_Camera = 0;
+	}
+
 	if (pImmediateContext) pImmediateContext->ClearState();
 	Memory::SafeRelease(pRenderTargetView);
 	Memory::SafeRelease(pSwapChain);
 	Memory::SafeRelease(pImmediateContext);
 	Memory::SafeRelease(pDevice);
+
 
 	//d3ddev->Release();    // close and release the 3D device
 	//d3d->Release();    // close and release Direct3D
