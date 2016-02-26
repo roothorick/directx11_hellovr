@@ -412,6 +412,7 @@ bool initD3D(HWND hWnd)
 }
 
 bool errorshown = false;
+unsigned frame_count = 0;
 
 // this is the function used to render a single frame
 void render_frame(void)
@@ -422,6 +423,7 @@ void render_frame(void)
 		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
 	bool result;
 
+	m_Camera->SetPosition(0, 0, -10);
 
 	// Generate the view matrix based on the camera's position.
 	m_Camera->Render();
@@ -436,10 +438,10 @@ void render_frame(void)
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(pImmediateContext);
 
-	// test code
-	viewMatrix.identity();
-	projectionMatrix.identity();
-	worldMatrix.identity();
+	//// test code
+	//viewMatrix.identity();
+	//projectionMatrix.identity();
+	//worldMatrix.identity();
 	// Render the model using the color shader.
 	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
 	if(!errorshown && !result)
@@ -461,6 +463,7 @@ void render_frame(void)
 	//d3ddev->EndScene();    // ends the 3D scene
 
 	//d3ddev->Present(NULL, NULL, NULL, NULL);   // displays the created frame on the screen
+	frame_count++;
 }
 
 
