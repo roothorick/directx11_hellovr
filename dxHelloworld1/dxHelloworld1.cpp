@@ -478,7 +478,7 @@ void cleanD3D(void)
 		m_ColorShader = 0;
 	}
 
-	// Release the model object.
+	// Release the model object.	
 	if(m_Model)
 	{
 		m_Model->Shutdown();
