@@ -359,7 +359,7 @@ bool initD3D(HWND hWnd)
 	}
 
 	// Initialize the model object.
-	result = m_Model->Initialize(pDevice);
+	result = m_Model->Initialize(pDevice, L"test.png");
 	if (!result)
 	{
 		MessageBox(hWnd, L"Could not initialize the model object.", L"Error", MB_OK);
@@ -443,7 +443,7 @@ void render_frame(void)
 	//projectionMatrix.identity();
 	//worldMatrix.identity();
 	// Render the model using the color shader.
-	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
+	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
 	if(!errorshown && !result)
 	{
 		errorshown = true;
