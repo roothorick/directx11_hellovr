@@ -35,10 +35,17 @@ bool TextureClass::Initialize(ID3D11Device* device, WCHAR* filename)
 
 	HRESULT result;
 
-	UINT pixels[] = {
-		0xff00ff00, 0xff0000ff,
-		0xffff0000, 0xffffffff,
+	//UINT pixels[64] = {
+	//	0xff00ff00, 0xff0000ff,
+	//	0xffff0000, 0xffffffff,
+	//};
+	UINT pixels[32*32] = {
+		0xffff0000, 0xff00ff00,
+		0xff0000ff,
 	};
+
+	for (int i = 0; i < ARRAYSIZE(pixels); i++)
+		pixels[i] = pixels[i%3];
 
 	D3D11_SUBRESOURCE_DATA subresourceData;
 	subresourceData.pSysMem = pixels;
@@ -46,8 +53,8 @@ bool TextureClass::Initialize(ID3D11Device* device, WCHAR* filename)
 	subresourceData.SysMemSlicePitch = 16;
 
 	D3D11_TEXTURE2D_DESC texture2dDesc;
-	texture2dDesc.Width = 2;
-	texture2dDesc.Height = 2;
+	texture2dDesc.Width = 32;
+	texture2dDesc.Height = 32;
 	texture2dDesc.MipLevels = 1;
 	texture2dDesc.ArraySize = 1;
 	texture2dDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;

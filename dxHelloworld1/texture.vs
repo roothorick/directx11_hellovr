@@ -45,6 +45,7 @@ PixelInputType TextureVertexShader(VertexInputType input)
     output.position = mul(input.position, worldMatrix);
     output.position = mul(output.position, viewMatrix);
     output.position = mul(output.position, projectionMatrix);
+    //output.position = input.position;
     
 	// Store the texture coordinates for the pixel shader.
 	output.tex = input.tex;
