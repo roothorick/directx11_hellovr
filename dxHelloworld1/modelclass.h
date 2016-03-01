@@ -11,6 +11,8 @@
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include "Vectors.h"
+#include "Matrices.h"
+#include <vector>
 
 typedef Vector3 D3DXVECTOR3;
 //typedef DirectX::XMFLOAT4 D3DXVECTOR4;
@@ -55,6 +57,9 @@ private:
 
 	bool LoadTexture(ID3D11Device*, WCHAR*);
 	void ReleaseTexture();
+
+	void AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata);
+	void ModelClass::AddCubeToScene(Matrix4 mat, std::vector<VertexType> &vertdata, std::vector<unsigned long> &indices);
 
 private:
 	ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;

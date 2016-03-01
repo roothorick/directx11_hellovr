@@ -22,6 +22,8 @@ UINT clientWidth = 800;
 UINT clientHeight = 600;
 const float SCREEN_DEPTH = 1000.0f;
 const float SCREEN_NEAR = 0.1f;
+const float MOVE_STEP = 0.3f;
+const float ROTATE_STEP = 5;
 D3DXMATRIX m_projectionMatrix;
 
 // d3d global declarations
@@ -180,6 +182,20 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+void Move(float x, float y)
+{
+	Vector3 pos = m_Camera->GetPosition();
+	pos.x += x * MOVE_STEP;
+	pos.y += y * MOVE_STEP;
+
+	m_Camera->SetPosition(pos.x, pos.y, pos.z);
+}
+
+void Rotate(float x, float y)
+{
+	
+}
+
 //
 //  º¯Êý: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -211,6 +227,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+	case WM_KEYDOWN:
+		{
+			switch (wParam)
+			{
+				case VK_LEFT:
+					Move(-1, 0);
+					break;
+				case VK_RIGHT:
+					Move(1, 0);
+					break;
+				case VK_UP:
+					Move(0, 1);
+					break;
+				case VK_DOWN:
+					Move(0, -1);
+					break;
+				case 'W':
+					Rotate(1, 0);
+					break;
+				case 'S':
+					Rotate(-1, 0);
+					break;
+				case 'A':
+					Rotate(0, -1);
+					break;
+				case 'D':
+					Rotate(0, 1);
+					break;
+			}
+		}
+		break;
     case WM_PAINT:
         {
             PAINTSTRUCT ps;

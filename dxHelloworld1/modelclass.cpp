@@ -77,80 +77,123 @@ ID3D11ShaderResourceView* ModelClass::GetTexture()
 	return m_Texture->GetTexture();
 }
 
+void ModelClass::AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata)
+{
+	VertexType temp;
+	temp.position.set(x, y, z);
+	temp.texture.set(tx, ty);
+	vertdata.push_back(temp);
+}
+
+void ModelClass::AddCubeToScene(Matrix4 mat, std::vector<VertexType> &vertdata, std::vector<unsigned long> &indices)
+{
+	// Matrix4 mat( outermat.data() );
+
+	Vector4 A = mat * Vector4(0, 0, 0, 1);
+	Vector4 B = mat * Vector4(1, 0, 0, 1);
+	Vector4 C = mat * Vector4(1, 1, 0, 1);
+	Vector4 D = mat * Vector4(0, 1, 0, 1);
+	Vector4 E = mat * Vector4(0, 0, 1, 1);
+	Vector4 F = mat * Vector4(1, 0, 1, 1);
+	Vector4 G = mat * Vector4(1, 1, 1, 1);
+	Vector4 H = mat * Vector4(0, 1, 1, 1);
+
+	int old_vertex_index = vertdata.size();
+	// triangles instead of quads
+	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata); //Front
+	AddCubeVertex(F.x, F.y, F.z, 1, 1, vertdata);
+	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
+	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
+	AddCubeVertex(H.x, H.y, H.z, 0, 0, vertdata);
+	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata);
+
+	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata); //Back
+	AddCubeVertex(A.x, A.y, A.z, 1, 1, vertdata);
+	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
+	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
+	AddCubeVertex(C.x, C.y, C.z, 0, 0, vertdata);
+	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata);
+
+	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata); //Top
+	AddCubeVertex(G.x, G.y, G.z, 1, 1, vertdata);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
+	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
+	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata);
+
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Bottom
+	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
+	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
+	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
+	AddCubeVertex(E.x, E.y, E.z, 0, 0, vertdata);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
+
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Left
+	AddCubeVertex(E.x, E.y, E.z, 1, 1, vertdata);
+	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
+	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
+	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
+
+	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata); //Right
+	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
+	AddCubeVertex(G.x, G.y, G.z, 0, 0, vertdata);
+	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata);
+
+	int new_vertex_index = vertdata.size();
+
+	for (int i = old_vertex_index; i < new_vertex_index; i++)
+	{
+		indices.push_back(i);
+	}
+}
 
 
 bool ModelClass::InitializeBuffers(ID3D11Device* device)
 {
-	VertexType* vertices;
-	unsigned long* indices;
+	std::vector<VertexType> vertices;
+	std::vector<unsigned long> indices;
 	D3D11_BUFFER_DESC vertexBufferDesc, indexBufferDesc;
     D3D11_SUBRESOURCE_DATA vertexData, indexData;
 	HRESULT result;
 
-
-	// Set the number of vertices in the vertex array.
-	m_vertexCount = 4;
-
-	// Set the number of indices in the index array.
-	m_indexCount = 6;
-
-	// Create the vertex array.
-	vertices = new VertexType[m_vertexCount];
-	if(!vertices)
-	{
-		return false;
-	}
-
-	// Create the index array.
-	indices = new unsigned long[m_indexCount];
-	if(!indices)
-	{
-		return false;
-	}
-
-	float testScale = 1.0f;
-	// Load the vertex array with data.
-	vertices[0].position = D3DXVECTOR3(-1.0f, -1.0f, 0.0f) * testScale;  // Bottom left.
-	vertices[0].texture = D3DXVECTOR2(0.0, 0.0f);
-
-	vertices[1].position = D3DXVECTOR3(-1.0f, 1.0f, 0.0f) * testScale;  // Top left.
-	vertices[1].texture = D3DXVECTOR2(0.0f, 1.0f);
-
-	vertices[2].position = D3DXVECTOR3(1.0f, 1.0f, 0.0f) * testScale;  // top right.
-	vertices[2].texture = D3DXVECTOR2(1.0f, 1.0f);
-
-	vertices[3].position = D3DXVECTOR3(1.0f, -1.0f, 0.0f) * testScale;  // bottom right.
-	vertices[3].texture = D3DXVECTOR2(1.0f, 0.0f);
-
+	//float testScale = 1.0f;
 	//// Load the vertex array with data.
-	//vertices[0].position = D3DXVECTOR3(-1.0f, -1.0f, 0.0f);  // Bottom left.
-	//vertices[0].texture = D3DXVECTOR2(0.0f, 1.0f);
+	//vertices[0].position = D3DXVECTOR3(-1.0f, -1.0f, 0.0f) * testScale;  // Bottom left.
+	//vertices[0].texture = D3DXVECTOR2(0.0, 1.0f);
 
-	//vertices[1].position = D3DXVECTOR3(0.0f, 1.0f, 0.0f);  // Top middle.
-	//vertices[1].texture = D3DXVECTOR2(0.5f, 0.0f);
+	//vertices[1].position = D3DXVECTOR3(-1.0f, 1.0f, 0.0f) * testScale;  // Top left.
+	//vertices[1].texture = D3DXVECTOR2(0.0f, 0.0f);
 
-	//vertices[2].position = D3DXVECTOR3(1.0f, -1.0f, 0.0f);  // Bottom right.
-	//vertices[2].texture = D3DXVECTOR2(1.0f, 1.0f);
+	//vertices[2].position = D3DXVECTOR3(1.0f, 1.0f, 0.0f) * testScale;  // top right.
+	//vertices[2].texture = D3DXVECTOR2(1.0f, 0.0f);
 
+	//vertices[3].position = D3DXVECTOR3(1.0f, -1.0f, 0.0f) * testScale;  // bottom right.
+	//vertices[3].texture = D3DXVECTOR2(1.0f, 1.0f);
 
-	// Load the index array with data.
-	indices[0] = 0;  
-	indices[1] = 1;  
-	indices[2] = 2;  
-	indices[3] = 2;
-	indices[4] = 3;
-	indices[5] = 0;
+	//// Load the index array with data.
+	//indices[0] = 0;  
+	//indices[1] = 1;  
+	//indices[2] = 2;  
+	//indices[3] = 2;
+	//indices[4] = 3;
+	//indices[5] = 0;
+
+	Matrix4 mat;
+	AddCubeToScene(mat, vertices, indices);
 
 	// Set up the description of the static vertex buffer.
     vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    vertexBufferDesc.ByteWidth = sizeof(VertexType) * m_vertexCount;
+    vertexBufferDesc.ByteWidth = sizeof(VertexType) * vertices.size();
     vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     vertexBufferDesc.CPUAccessFlags = 0;
     vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
 	// Give the subresource structure a pointer to the vertex data.
-    vertexData.pSysMem = vertices;
+    vertexData.pSysMem = &vertices[0];
 	vertexData.SysMemPitch = 0;
 	vertexData.SysMemSlicePitch = 0;
 
@@ -163,14 +206,14 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 
 	// Set up the description of the static index buffer.
     indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    indexBufferDesc.ByteWidth = sizeof(unsigned long) * m_indexCount;
+    indexBufferDesc.ByteWidth = sizeof(unsigned long) * indices.size();
     indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
     indexBufferDesc.CPUAccessFlags = 0;
     indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.StructureByteStride = 0;
 
 	// Give the subresource structure a pointer to the index data.
-    indexData.pSysMem = indices;
+    indexData.pSysMem = &indices[0];
 	indexData.SysMemPitch = 0;
 	indexData.SysMemSlicePitch = 0;
 
@@ -181,12 +224,8 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 		return false;
 	}
 
-	// Release the arrays now that the vertex and index buffers have been created and loaded.
-	delete [] vertices;
-	vertices = 0;
-
-	delete [] indices;
-	indices = 0;
+	m_vertexCount = vertices.size();
+	m_indexCount = indices.size();
 
 	return true;
 }

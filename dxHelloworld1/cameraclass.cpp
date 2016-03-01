@@ -62,7 +62,6 @@ void CameraClass::Render()
 	float yaw, pitch, roll;
 	D3DXMATRIX rotationMatrix;
 
-
 	// Setup the vector that points upwards.
 	up.x = 0.0f;
 	up.y = 1.0f;
@@ -77,6 +76,9 @@ void CameraClass::Render()
 	lookAt.x = 0.0f;
 	lookAt.y = 0.0f;
 	lookAt.z = 1.0f;
+
+
+
 
 	// Set the yaw (Y axis), pitch (X axis), and roll (Z axis) rotations in radians.
 	pitch = m_rotationX * 0.0174532925f;
