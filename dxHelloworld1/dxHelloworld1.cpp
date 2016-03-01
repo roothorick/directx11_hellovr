@@ -31,6 +31,7 @@ ID3D11Device*			pDevice	= nullptr;
 ID3D11DeviceContext*	pImmediateContext = nullptr;
 IDXGISwapChain*			pSwapChain = nullptr;
 ID3D11RenderTargetView*	pRenderTargetView = nullptr;
+ID3D11DepthStencilView* pDepthStencilView = nullptr;
 D3D_DRIVER_TYPE			driverType;
 D3D_FEATURE_LEVEL		featureLevel;
 D3D11_VIEWPORT			viewport;
@@ -350,6 +351,9 @@ bool initD3D(HWND hWnd)
 	swapDesc.SampleDesc.Count = 1; // multisampling, which antialiasing for geometry. Turn it off
 	swapDesc.SampleDesc.Quality = 0;
 	swapDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; // alt-enter fullscreen
+	
+	swapDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	swapDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
 	HRESULT errorCode;
 	for (unsigned i = 0; i < numDriverTypes; ++i)
@@ -372,24 +376,43 @@ bool initD3D(HWND hWnd)
 		return false;
 	}
 
+	HRESULT result;
 	// CREATE RENDER TARGET VIEW
 	ID3D11Texture2D*	pBackBufferTex;
-	pSwapChain->GetBuffer(NULL, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBufferTex));
-	HRESULT result = pDevice->CreateRenderTargetView(pBackBufferTex, nullptr, &pRenderTargetView);
+	result = pSwapChain->GetBuffer(NULL, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBufferTex));
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	D3D11_TEXTURE2D_DESC BBDesc;
+	ZeroMemory(&BBDesc, sizeof(D3D11_TEXTURE2D_DESC));
+	pBackBufferTex->GetDesc(&BBDesc);
+
+	D3D11_RENDER_TARGET_VIEW_DESC RTVDesc;
+	ZeroMemory(&RTVDesc, sizeof(D3D11_RENDER_TARGET_VIEW_DESC));
+	RTVDesc.Format = BBDesc.Format;
+	RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	//RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+	RTVDesc.Texture2D.MipSlice = 0;
+
+	result = pDevice->CreateRenderTargetView(pBackBufferTex, &RTVDesc, &pRenderTargetView);
 	if (FAILED(result))
 	{
 		MyDebug(_T("ERROR"));
 	}
-	Memory::SafeRelease(pBackBufferTex);
+	//Memory::SafeRelease(pBackBufferTex);
 
 	// CREATE DEPTH STENCIL
 	ID3D11Texture2D* pDepthStencil = NULL;
 	D3D11_TEXTURE2D_DESC descDepth;
+	ZeroMemory(&descDepth, sizeof(descDepth));
 	descDepth.Width = swapDesc.BufferDesc.Width;
 	descDepth.Height = swapDesc.BufferDesc.Height;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;;//pDeviceSettings->d3d11.AutoDepthStencilFormat;
+	descDepth.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;// DXGI_FORMAT_D32_FLOAT;//DXGI_FORMAT_D24_UNORM_S8_UINT;;//pDeviceSettings->d3d11.AutoDepthStencilFormat;
+	// DXGI_FORMAT_D32_FLOAT_S8X24_UINT
 	descDepth.SampleDesc.Count = 1;
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
@@ -397,11 +420,12 @@ bool initD3D(HWND hWnd)
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;
 	result = pDevice->CreateTexture2D(&descDepth, NULL, &pDepthStencil);
-
+	if (FAILED(result))
+		return false;
 
 
 	D3D11_DEPTH_STENCIL_DESC dsDesc;
-
+	ZeroMemory(&dsDesc, sizeof(dsDesc));
 	// Depth test parameters
 	dsDesc.DepthEnable = true;
 	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
@@ -426,7 +450,11 @@ bool initD3D(HWND hWnd)
 
 	// Create depth stencil state
 	ID3D11DepthStencilState * pDSState;
-	pDevice->CreateDepthStencilState(&dsDesc, &pDSState);
+	result = pDevice->CreateDepthStencilState(&dsDesc, &pDSState);
+	if (FAILED(result))
+	{
+		return false;
+	}
 
 	// Bind depth stencil state
 	pImmediateContext->OMSetDepthStencilState(pDSState, 1);
@@ -434,15 +462,25 @@ bool initD3D(HWND hWnd)
 
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-	descDSV.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	ZeroMemory(&descDSV, sizeof(descDSV));
+	descDSV.Format = descDepth.Format;// DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	//descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 	descDSV.Texture2D.MipSlice = 0;
 
 	// Create the depth stencil view
-	ID3D11DepthStencilView* pDSV;
 	result = pDevice->CreateDepthStencilView(pDepthStencil, // Depth stencil texture
 		&descDSV, // Depth stencil desc
-		&pDSV);  // [out] Depth stencil view
+		&pDepthStencilView);  // [out] Depth stencil view
+
+	if (FAILED(result))
+	{
+		WCHAR buf[100];
+		wsprintf(buf, L"%x", result);
+		MyDebug(buf);
+		MyDebug(L"CreateDepthStencilView failed.");
+		return false;
+	}
 
 	//			 // Bind the depth stencil view
 	//pImmediateContext->OMSetRenderTargets(1,          // One rendertarget view
@@ -450,8 +488,8 @@ bool initD3D(HWND hWnd)
 	//	pDSV);     // Depth stencil view for the render target
 
 				   //BIND RENDER TARGET VIEW
-	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr); // depth stencil view is for shadow map
-
+	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView); // depth stencil view is for shadow map
+	
 
 
 	//VIEWPORT CREATION
@@ -545,6 +583,7 @@ unsigned frame_count = 0;
 void render_frame(void)
 {
 	pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
+	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
@@ -621,6 +660,7 @@ void cleanD3D(void)
 	}
 
 	if (pImmediateContext) pImmediateContext->ClearState();
+	Memory::SafeRelease(pDepthStencilView);
 	Memory::SafeRelease(pRenderTargetView);
 	Memory::SafeRelease(pSwapChain);
 	Memory::SafeRelease(pImmediateContext);

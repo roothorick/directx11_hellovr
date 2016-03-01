@@ -77,11 +77,12 @@ ID3D11ShaderResourceView* ModelClass::GetTexture()
 	return m_Texture->GetTexture();
 }
 
-void ModelClass::AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata)
+void ModelClass::AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata, D3DXVECTOR3 normal)
 {
 	VertexType temp;
 	temp.position.set(x, y, z);
 	temp.texture.set(tx, ty);
+	temp.normal = normal;
 	vertdata.push_back(temp);
 }
 
@@ -100,47 +101,54 @@ void ModelClass::AddCubeToScene(Matrix4 mat, std::vector<VertexType> &vertdata, 
 
 	int old_vertex_index = vertdata.size();
 	// triangles instead of quads
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata); //Front
-	AddCubeVertex(F.x, F.y, F.z, 1, 1, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata);
+	D3DXVECTOR3 normal;
+	normal.set(0, 0, -1);
+	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata, normal); //Front
+	AddCubeVertex(F.x, F.y, F.z, 1, 1, vertdata, normal);
+	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata, normal);
+	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata, normal);
+	AddCubeVertex(H.x, H.y, H.z, 0, 0, vertdata, normal);
+	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata, normal);
 
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata); //Back
-	AddCubeVertex(A.x, A.y, A.z, 1, 1, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 0, 0, vertdata);
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata);
+	normal.set(0, 0, 1);
+	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata, normal); //Back
+	AddCubeVertex(A.x, A.y, A.z, 1, 1, vertdata, normal);
+	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata, normal);
+	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata, normal);
+	AddCubeVertex(C.x, C.y, C.z, 0, 0, vertdata, normal);
+	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata, normal);
 
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata); //Top
-	AddCubeVertex(G.x, G.y, G.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata);
+	normal.set(0, 1, 0);
+	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata, normal); //Top
+	AddCubeVertex(G.x, G.y, G.z, 1, 1, vertdata, normal);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata, normal);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata, normal);
+	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata, normal);
+	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata, normal);
 
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Bottom
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
+	normal.set(0, -1, 0);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata, normal); //Bottom
+	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata, normal);
+	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata, normal);
+	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata, normal);
+	AddCubeVertex(E.x, E.y, E.z, 0, 0, vertdata, normal);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata, normal);
 
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Left
-	AddCubeVertex(E.x, E.y, E.z, 1, 1, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
+	normal.set(-1, 0, 0);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata, normal); //Left
+	AddCubeVertex(E.x, E.y, E.z, 1, 1, vertdata, normal);
+	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata, normal);
+	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata, normal);
+	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata, normal);
+	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata, normal);
 
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata); //Right
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 0, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata);
+	normal.set(1, 0, 0);
+	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata, normal); //Right
+	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata, normal);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata, normal);
+	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata, normal);
+	AddCubeVertex(G.x, G.y, G.z, 0, 0, vertdata, normal);
+	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata, normal);
 
 	int new_vertex_index = vertdata.size();
 

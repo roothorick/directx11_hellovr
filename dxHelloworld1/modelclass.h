@@ -33,6 +33,7 @@ private:
 	{
 		D3DXVECTOR3 position;
 	    D3DXVECTOR2 texture;
+		D3DXVECTOR3 normal;
 
 		VertexType() {}
 	};
@@ -58,7 +59,7 @@ private:
 	bool LoadTexture(ID3D11Device*, WCHAR*);
 	void ReleaseTexture();
 
-	void AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata);
+	void AddCubeVertex(float x, float y, float z, float tx, float ty, std::vector<VertexType> &vertdata, D3DXVECTOR3 normal);
 	void ModelClass::AddCubeToScene(Matrix4 mat, std::vector<VertexType> &vertdata, std::vector<unsigned long> &indices);
 
 private:

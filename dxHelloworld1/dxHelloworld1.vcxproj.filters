@@ -91,4 +91,12 @@
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="texture.vs">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="texture.ps">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>
