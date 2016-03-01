@@ -181,8 +181,38 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 	//indices[4] = 3;
 	//indices[5] = 0;
 
-	Matrix4 mat;
-	AddCubeToScene(mat, vertices, indices);
+
+	//Matrix4 mat;
+	//AddCubeToScene(mat, vertices, indices);
+
+	float m_fScale = 1.0f;
+	float m_iSceneVolumeWidth = 20,
+		m_iSceneVolumeHeight = 20,
+		m_iSceneVolumeDepth = 20;
+	float m_fScaleSpacing = 4.0f;
+	Matrix4 matScale;
+	matScale.scale(m_fScale, m_fScale, m_fScale);
+	Matrix4 matTransform;
+	matTransform.translate(
+		-((float)m_iSceneVolumeWidth * m_fScaleSpacing) / 2.f,
+		-((float)m_iSceneVolumeHeight * m_fScaleSpacing) / 2.f,
+		-((float)m_iSceneVolumeDepth * m_fScaleSpacing) / 2.f);
+
+	Matrix4 mat = matScale * matTransform;
+
+	for (int z = 0; z< m_iSceneVolumeDepth; z++)
+	{
+		for (int y = 0; y< m_iSceneVolumeHeight; y++)
+		{
+			for (int x = 0; x< m_iSceneVolumeWidth; x++)
+			{
+				AddCubeToScene(mat, vertices, indices);
+				mat = mat * Matrix4().translate(m_fScaleSpacing, 0, 0);
+			}
+			mat = mat * Matrix4().translate(-((float)m_iSceneVolumeWidth) * m_fScaleSpacing, m_fScaleSpacing, 0);
+		}
+		mat = mat * Matrix4().translate(0, -((float)m_iSceneVolumeHeight) * m_fScaleSpacing, m_fScaleSpacing);
+	}
 
 	// Set up the description of the static vertex buffer.
     vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;

@@ -417,7 +417,7 @@ bool initD3D(HWND hWnd)
 	}
 
 	// Initialize the model object.
-	result = m_Model->Initialize(pDevice, L"glew.png");
+	result = m_Model->Initialize(pDevice, L"cube_texture.png");
 	if (!result)
 	{
 		MessageBox(hWnd, L"Could not initialize the model object.", L"Error", MB_OK);
