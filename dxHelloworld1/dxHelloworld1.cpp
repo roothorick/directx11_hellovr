@@ -382,8 +382,77 @@ bool initD3D(HWND hWnd)
 	}
 	Memory::SafeRelease(pBackBufferTex);
 
-	//BIND RENDER TARGET VIEW
+	// CREATE DEPTH STENCIL
+	ID3D11Texture2D* pDepthStencil = NULL;
+	D3D11_TEXTURE2D_DESC descDepth;
+	descDepth.Width = swapDesc.BufferDesc.Width;
+	descDepth.Height = swapDesc.BufferDesc.Height;
+	descDepth.MipLevels = 1;
+	descDepth.ArraySize = 1;
+	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;;//pDeviceSettings->d3d11.AutoDepthStencilFormat;
+	descDepth.SampleDesc.Count = 1;
+	descDepth.SampleDesc.Quality = 0;
+	descDepth.Usage = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	descDepth.CPUAccessFlags = 0;
+	descDepth.MiscFlags = 0;
+	result = pDevice->CreateTexture2D(&descDepth, NULL, &pDepthStencil);
+
+
+
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	// Depth test parameters
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	// Stencil test parameters
+	dsDesc.StencilEnable = true;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create depth stencil state
+	ID3D11DepthStencilState * pDSState;
+	pDevice->CreateDepthStencilState(&dsDesc, &pDSState);
+
+	// Bind depth stencil state
+	pImmediateContext->OMSetDepthStencilState(pDSState, 1);
+
+
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0;
+
+	// Create the depth stencil view
+	ID3D11DepthStencilView* pDSV;
+	result = pDevice->CreateDepthStencilView(pDepthStencil, // Depth stencil texture
+		&descDSV, // Depth stencil desc
+		&pDSV);  // [out] Depth stencil view
+
+	//			 // Bind the depth stencil view
+	//pImmediateContext->OMSetRenderTargets(1,          // One rendertarget view
+	//	&pRTV,      // Render target view, created earlier
+	//	pDSV);     // Depth stencil view for the render target
+
+				   //BIND RENDER TARGET VIEW
 	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr); // depth stencil view is for shadow map
+
+
 
 	//VIEWPORT CREATION
 	viewport.Width = static_cast<float>(clientWidth);
