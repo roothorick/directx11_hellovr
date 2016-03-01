@@ -182,18 +182,23 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-void Move(float x, float y)
+void Move(float x, float y, float z = 0)
 {
 	Vector3 pos = m_Camera->GetPosition();
 	pos.x += x * MOVE_STEP;
 	pos.y += y * MOVE_STEP;
+	pos.z += z * MOVE_STEP;
 
 	m_Camera->SetPosition(pos.x, pos.y, pos.z);
 }
 
 void Rotate(float x, float y)
 {
-	
+	Vector3 rot = m_Camera->GetRotation();
+	rot.x += x*ROTATE_STEP;
+	rot.y += y*ROTATE_STEP;
+
+	m_Camera->SetRotation(rot.x, rot.y, rot.z);
 }
 
 //
@@ -244,9 +249,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					Move(0, -1);
 					break;
 				case 'W':
-					Rotate(1, 0);
+					Move(0, 0, 1);
 					break;
 				case 'S':
+					Move(0, 0, -1);
+					break;
+				case 'Q':
+					Rotate(1, 0);
+					break;
+				case 'E':
 					Rotate(-1, 0);
 					break;
 				case 'A':
@@ -470,7 +481,7 @@ void render_frame(void)
 		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
 	bool result;
 
-	m_Camera->SetPosition(0, 0, -10);
+	//m_Camera->SetPosition(0, 0, -10);
 
 	// Generate the view matrix based on the camera's position.
 	m_Camera->Render();
