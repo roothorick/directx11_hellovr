@@ -31,6 +31,8 @@ const float MOVE_STEP = 0.3f;
 const float ROTATE_STEP = 5;
 D3DXMATRIX m_projectionMatrix;
 
+D3DXMATRIX m_orthoMatrix;
+
 // d3d global declarations
 ID3D11Device*			pDevice	= nullptr;
 ID3D11DeviceContext*	pImmediateContext = nullptr;
@@ -714,7 +716,7 @@ bool init(HWND hWnd)
 	}
 
 	// Initialize the debug window object.
-	result = m_DebugWindow->Initialize(pDevice, clientWidth, clientHeight, 100, 100);
+	result = m_DebugWindow->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
 	if (!result)
 	{
 		MessageBox(hWnd, L"Could not initialize the debug window object.", L"Error", MB_OK);
@@ -729,6 +731,12 @@ bool init(HWND hWnd)
 	//D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
 	DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
 	m_projectionMatrix.set((const float*)&m.r);
+
+
+	// Create an orthographic projection matrix for 2D rendering.
+	//D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
+	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)clientWidth, (float)clientHeight, SCREEN_NEAR, SCREEN_DEPTH);
+	m_orthoMatrix.set((const float*)&mo.r);
 
 	SetupCameras();
 
@@ -777,12 +785,64 @@ void TurnZBufferOff()
 bool errorshown = false;
 unsigned frame_count = 0;
 
+bool RenderScene()
+{
+	bool result;
+	D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
+
+	//m_Camera->SetPosition(0, 0, -10);
+
+	// Generate the view matrix based on the camera's position.
+	m_Camera->Render();
+
+	// Get the world, view, and projection matrices from the camera and d3d objects.
+	m_Camera->GetViewMatrix(viewMatrix);
+	//m_D3D->GetWorldMatrix(worldMatrix);
+	worldMatrix.identity();
+	//m_D3D->GetProjectionMatrix(projectionMatrix);
+	projectionMatrix = m_projectionMatrix;
+
+	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+	m_Model->Render(pImmediateContext);
+
+	//// test code
+	//viewMatrix.identity();
+	//projectionMatrix.identity();
+	//worldMatrix.identity();
+	// Render the model using the color shader.
+	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
+	if (!errorshown && !result)
+	{
+		errorshown = true;
+		return false;
+		MyDebug(_T("render failed"));
+	}
+
+	return true;
+}
+
 bool RenderToTexture()
 {
-	if (frame_count % 90 < 45)
-		TurnZBufferOff();
-	else
-		TurnZBufferOn();
+	bool result;
+
+
+	// Set the render target to be the render to texture.
+	m_RenderTexture->SetRenderTarget(pImmediateContext, pDepthStencilView);
+	//Clear the render to texture background to blue so we can differentiate it from the rest of the normal scene.
+
+		// Clear the render to texture.
+		m_RenderTexture->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
+
+	// Render the scene now and it will draw to the render to texture instead of the back buffer.
+	result = RenderScene();
+	if (!result)
+	{
+		return false;
+	}
+
+	// Reset the render target back to the original back buffer and not the render to texture anymore.
+	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+
 	return true;
 }
 
@@ -802,7 +862,7 @@ void render_frame(void)
 	pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
 	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
+		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
 
 	//m_Camera->SetPosition(0, 0, -10);
 
@@ -831,6 +891,28 @@ void render_frame(void)
 		//return false;
 		MyDebug(_T("render failed"));
 	}
+
+
+	TurnZBufferOff();
+
+	result = m_DebugWindow->Render(pImmediateContext, 50, 50);
+	if (!result)
+	{
+		return;
+	}
+
+	orthoMatrix = m_orthoMatrix;
+
+	// Render the debug window using the texture shader.
+	result = m_ColorShader->Render(pImmediateContext, m_DebugWindow->GetIndexCount(), worldMatrix, viewMatrix,
+		orthoMatrix, m_RenderTexture->GetShaderResourceView());
+	if (!result)
+	{
+		return;
+	}
+
+
+	TurnZBufferOn();
 
 
 	pSwapChain->Present(0, 0);
