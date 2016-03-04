@@ -9,10 +9,15 @@
 #include "modelclass.h"
 #include "colorshaderclass.h"
 #include <DirectXMath.h>
+#include "openvr.h"
+#include "rendertextureclass.h"
+#include "debugwindowclass.h"
 
 #pragma comment (lib, "d3d11.lib")
+#pragma comment (lib, "openvr_api.lib")
 
 #define MAX_LOADSTRING 100
+#define VR_DISABLED
 
 // 全局变量: 
 HINSTANCE hInst;                                // 当前实例
@@ -32,12 +37,35 @@ ID3D11DeviceContext*	pImmediateContext = nullptr;
 IDXGISwapChain*			pSwapChain = nullptr;
 ID3D11RenderTargetView*	pRenderTargetView = nullptr;
 ID3D11DepthStencilView* pDepthStencilView = nullptr;
+ID3D11DepthStencilState * pDSState;
+ID3D11DepthStencilState* m_depthDisabledStencilState;
 D3D_DRIVER_TYPE			driverType;
 D3D_FEATURE_LEVEL		featureLevel;
 D3D11_VIEWPORT			viewport;
 CameraClass* m_Camera = nullptr;
 ModelClass* m_Model = nullptr;
 ColorShaderClass* m_ColorShader = nullptr;
+RenderTextureClass* m_RenderTexture;
+DebugWindowClass* m_DebugWindow;
+
+
+uint32_t m_nRenderWidth;
+uint32_t m_nRenderHeight;
+
+float m_fNearClip;
+float m_fFarClip;
+
+Matrix4 m_mat4HMDPose;
+Matrix4 m_mat4eyePosLeft;
+Matrix4 m_mat4eyePosRight;
+
+Matrix4 m_mat4ProjectionCenter;
+Matrix4 m_mat4ProjectionLeft;
+Matrix4 m_mat4ProjectionRight;
+
+vr::IVRSystem *m_pHMD;
+vr::IVRRenderModels *m_pRenderModels;
+
 
 namespace Memory
 {
@@ -76,9 +104,9 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 // d3d function prototypes
-bool initD3D(HWND hWnd);
+bool init(HWND hWnd);
 void render_frame(void);
-void cleanD3D(void);
+void clean(void);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -117,7 +145,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		render_frame();
     }
 
-	cleanD3D();
+	clean();
 
     return (int) msg.wParam;
 }
@@ -178,7 +206,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
-   initD3D(hWnd);
+   init(hWnd);
 
    return TRUE;
 }
@@ -307,15 +335,106 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
+{
+	if (!m_pHMD)
+		return Matrix4();
+
+	vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
+	Matrix4 matrixObj(
+		matEyeRight.m[0][0], matEyeRight.m[1][0], matEyeRight.m[2][0], 0.0,
+		matEyeRight.m[0][1], matEyeRight.m[1][1], matEyeRight.m[2][1], 0.0,
+		matEyeRight.m[0][2], matEyeRight.m[1][2], matEyeRight.m[2][2], 0.0,
+		matEyeRight.m[0][3], matEyeRight.m[1][3], matEyeRight.m[2][3], 1.0f
+		);
+
+	return matrixObj.invert();
+}
+
+Matrix4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
+{
+	if (!m_pHMD)
+		return Matrix4();
+
+	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_OpenGL);
+
+	return Matrix4(
+		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
+		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
+		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
+		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
+		);
+}
+
+void SetupCameras()
+{
+	m_mat4ProjectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
+	m_mat4ProjectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
+	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
+	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
+}
+
+#ifndef  VR_DISABLED
 
 
-// this function initializes and prepares Direct3D for use
-bool initD3D(HWND hWnd)
+
+bool SetupStereoRenderTargets()
+{
+	if (!m_pHMD)
+		return false;
+
+	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
+
+	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
+	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
+
+	return true;
+}
+
+#endif // ! VR_DISABLED
+
+// this function initializes D3D and VR
+bool init(HWND hWnd)
 {
 	UINT createDeviceFlags = 0;
 
 #ifdef DEBUG
 	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+#ifndef VR_DISABLED
+
+	// Loading the SteamVR Runtime
+	vr::EVRInitError eError = vr::VRInitError_None;
+
+	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
+
+	if (eError != vr::VRInitError_None)
+	{
+		m_pHMD = NULL;
+		char buf[1024];
+		sprintf_s(buf, ARRAYSIZE(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		string temp(buf);
+		wstring wtemp(temp.begin(), temp.end());
+		MessageBox(hWnd, wtemp.c_str(), L"VR_Init Failed", 0);
+		return false;
+	}
+
+
+	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
+	if (!m_pRenderModels)
+	{
+		m_pHMD = NULL;
+		vr::VR_Shutdown();
+
+		char buf[1024];
+		sprintf_s(buf, ARRAYSIZE(buf), "Unable to get render model interface: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		string temp(buf);
+		wstring wtemp(temp.begin(), temp.end());
+		MessageBox(hWnd, wtemp.c_str(), L"VR_Init Failed", NULL);
+		return false;
+	}
+
 #endif
 
 	// CREATE DEVICE AND SWAP CHAIN
@@ -449,7 +568,6 @@ bool initD3D(HWND hWnd)
 	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
 	// Create depth stencil state
-	ID3D11DepthStencilState * pDSState;
 	result = pDevice->CreateDepthStencilState(&dsDesc, &pDSState);
 	if (FAILED(result))
 	{
@@ -491,6 +609,33 @@ bool initD3D(HWND hWnd)
 	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView); // depth stencil view is for shadow map
 	
 
+	D3D11_DEPTH_STENCIL_DESC depthDisabledStencilDesc;
+																					 // Clear the second depth stencil state before setting the parameters.
+	ZeroMemory(&depthDisabledStencilDesc, sizeof(depthDisabledStencilDesc));
+
+	// Now create a second depth stencil state which turns off the Z buffer for 2D rendering.  The only difference is 
+	// that DepthEnable is set to false, all other parameters are the same as the other depth stencil state.
+	depthDisabledStencilDesc.DepthEnable = false;
+	depthDisabledStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthDisabledStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthDisabledStencilDesc.StencilEnable = true;
+	depthDisabledStencilDesc.StencilReadMask = 0xFF;
+	depthDisabledStencilDesc.StencilWriteMask = 0xFF;
+	depthDisabledStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	depthDisabledStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depthDisabledStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	depthDisabledStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create the state using the device.
+	result = pDevice->CreateDepthStencilState(&depthDisabledStencilDesc, &m_depthDisabledStencilState);
+	if (FAILED(result))
+	{
+		return false;
+	}
 
 	//VIEWPORT CREATION
 	viewport.Width = static_cast<float>(clientWidth);
@@ -546,6 +691,36 @@ bool initD3D(HWND hWnd)
 		return false;
 	}
 
+
+	// Create the render to texture object.
+	m_RenderTexture = new RenderTextureClass;
+	if (!m_RenderTexture)
+	{
+		return false;
+	}
+
+	// Initialize the render to texture object.
+	result = m_RenderTexture->Initialize(pDevice, clientWidth, clientHeight);
+	if (!result)
+	{
+		return false;
+	}
+
+	// Create the debug window object.
+	m_DebugWindow = new DebugWindowClass;
+	if (!m_DebugWindow)
+	{
+		return false;
+	}
+
+	// Initialize the debug window object.
+	result = m_DebugWindow->Initialize(pDevice, clientWidth, clientHeight, 100, 100);
+	if (!result)
+	{
+		MessageBox(hWnd, L"Could not initialize the debug window object.", L"Error", MB_OK);
+		return false;
+	}
+
 	// Setup the projection matrix.
 	float fieldOfView = (float)3.14159265359 / 4.0f;
 	float screenAspect = (float)clientWidth / (float)clientHeight;
@@ -554,6 +729,14 @@ bool initD3D(HWND hWnd)
 	//D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
 	DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
 	m_projectionMatrix.set((const float*)&m.r);
+
+	SetupCameras();
+
+	if (!vr::VRCompositor())
+	{
+		printf("Compositor initialization failed. See log file for details\n");
+		return false;
+	}
 
 	return true;
 
@@ -576,18 +759,50 @@ bool initD3D(HWND hWnd)
 	//	&d3ddev);
 }
 
+
+void TurnZBufferOn()
+{
+	pImmediateContext->OMSetDepthStencilState(pDSState, 1);
+	return;
+}
+
+
+void TurnZBufferOff()
+{
+	pImmediateContext->OMSetDepthStencilState(m_depthDisabledStencilState, 1);
+	return;
+}
+
+
 bool errorshown = false;
 unsigned frame_count = 0;
+
+bool RenderToTexture()
+{
+	if (frame_count % 90 < 45)
+		TurnZBufferOff();
+	else
+		TurnZBufferOn();
+	return true;
+}
 
 // this is the function used to render a single frame
 void render_frame(void)
 {
+
+	bool result;
+
+	// Render the entire scene to the texture first.
+	result = RenderToTexture();
+	if (!result)
+	{
+		return;
+	}
+
 	pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
 	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-
 		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix;
-	bool result;
 
 	//m_Camera->SetPosition(0, 0, -10);
 
@@ -633,8 +848,8 @@ void render_frame(void)
 }
 
 
-// this is the function that cleans up Direct3D and COM
-void cleanD3D(void)
+// this is the function that cleans up D3D and VR
+void clean(void)
 {
 		// Release the color shader object.
 	if(m_ColorShader)
