@@ -44,11 +44,12 @@ ID3D11DepthStencilState* m_depthDisabledStencilState;
 D3D_DRIVER_TYPE			driverType;
 D3D_FEATURE_LEVEL		featureLevel;
 D3D11_VIEWPORT			viewport;
-CameraClass* m_Camera = nullptr;
+CameraClass* m_CameraLeft = nullptr,
+			*m_CameraRight = nullptr;
 ModelClass* m_Model = nullptr;
 ColorShaderClass* m_ColorShader = nullptr;
-RenderTextureClass* m_RenderTexture;
-DebugWindowClass* m_DebugWindow;
+RenderTextureClass* m_RenderTextureLeft, *m_RenderTextureRight;
+DebugWindowClass* m_DebugWindowLeft, *m_DebugWindowRight;
 
 
 uint32_t m_nRenderWidth;
@@ -215,21 +216,36 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 void Move(float x, float y, float z = 0)
 {
-	Vector3 pos = m_Camera->GetPosition();
+	Vector3 pos;
+	pos = m_CameraLeft->GetPosition();
 	pos.x += x * MOVE_STEP;
 	pos.y += y * MOVE_STEP;
 	pos.z += z * MOVE_STEP;
 
-	m_Camera->SetPosition(pos.x, pos.y, pos.z);
+	m_CameraLeft->SetPosition(pos.x, pos.y, pos.z);
+
+	pos = m_CameraRight->GetPosition();
+	pos.x += x * MOVE_STEP;
+	pos.y += y * MOVE_STEP;
+	pos.z += z * MOVE_STEP;
+
+	m_CameraRight->SetPosition(pos.x, pos.y, pos.z);
 }
 
 void Rotate(float x, float y)
 {
-	Vector3 rot = m_Camera->GetRotation();
+	Vector3 rot;
+	rot= m_CameraLeft->GetRotation();
 	rot.x += x*ROTATE_STEP;
 	rot.y += y*ROTATE_STEP;
 
-	m_Camera->SetRotation(rot.x, rot.y, rot.z);
+	m_CameraLeft->SetRotation(rot.x, rot.y, rot.z);
+
+	rot= m_CameraRight->GetRotation();
+	rot.x += x*ROTATE_STEP;
+	rot.y += y*ROTATE_STEP;
+
+	m_CameraRight->SetRotation(rot.x, rot.y, rot.z);
 }
 
 //
@@ -654,14 +670,24 @@ bool init(HWND hWnd)
 
 
 	// Create the camera object.
-	m_Camera = new CameraClass;
-	if (!m_Camera)
+	m_CameraLeft = new CameraClass;
+	if (!m_CameraLeft)
 	{
 		return false;
 	}
 
 	// Set the initial position of the camera.
-	m_Camera->SetPosition(0.0f, 0.0f, -10.0f);
+	m_CameraLeft->SetPosition(0.0f, 0.0f, -10.0f);
+
+	// Create the camera object.
+	m_CameraRight = new CameraClass;
+	if (!m_CameraRight)
+	{
+		return false;
+	}
+
+	// Set the initial position of the camera.
+	m_CameraRight->SetPosition(1.5f, 0.0f, -10.0f);
 
 	// Create the model object.
 	m_Model = new ModelClass;
@@ -695,33 +721,54 @@ bool init(HWND hWnd)
 
 
 	// Create the render to texture object.
-	m_RenderTexture = new RenderTextureClass;
-	if (!m_RenderTexture)
+	m_RenderTextureLeft = new RenderTextureClass;
+	if (!m_RenderTextureLeft)
 	{
 		return false;
 	}
 
 	// Initialize the render to texture object.
-	result = m_RenderTexture->Initialize(pDevice, clientWidth, clientHeight);
+	result = m_RenderTextureLeft->Initialize(pDevice, clientWidth, clientHeight);
+	if (!result)
+	{
+		return false;
+	}
+
+	m_RenderTextureRight = new RenderTextureClass;
+	if (!m_RenderTextureRight)
+	{
+		return false;
+	}
+
+	// Initialize the render to texture object.
+	result = m_RenderTextureRight->Initialize(pDevice, clientWidth, clientHeight);
 	if (!result)
 	{
 		return false;
 	}
 
 	// Create the debug window object.
-	m_DebugWindow = new DebugWindowClass;
-	if (!m_DebugWindow)
+	m_DebugWindowLeft = new DebugWindowClass;
+	if (!m_DebugWindowLeft)
 	{
 		return false;
 	}
 
 	// Initialize the debug window object.
-	result = m_DebugWindow->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
+	result = m_DebugWindowLeft->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
 	if (!result)
 	{
 		MessageBox(hWnd, L"Could not initialize the debug window object.", L"Error", MB_OK);
 		return false;
 	}
+
+	m_DebugWindowRight = new DebugWindowClass;
+	if (!m_DebugWindowRight)
+	{
+		return false;
+	}
+	// Initialize the debug window object.
+	result = m_DebugWindowRight->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
 
 	// Setup the projection matrix.
 	float fieldOfView = (float)3.14159265359 / 4.0f;
@@ -785,7 +832,7 @@ void TurnZBufferOff()
 bool errorshown = false;
 unsigned frame_count = 0;
 
-bool RenderScene()
+bool RenderScene(CameraClass *camera)
 {
 	bool result;
 	D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
@@ -793,10 +840,10 @@ bool RenderScene()
 	//m_Camera->SetPosition(0, 0, -10);
 
 	// Generate the view matrix based on the camera's position.
-	m_Camera->Render();
+	camera->Render();
 
 	// Get the world, view, and projection matrices from the camera and d3d objects.
-	m_Camera->GetViewMatrix(viewMatrix);
+	camera->GetViewMatrix(viewMatrix);
 	//m_D3D->GetWorldMatrix(worldMatrix);
 	worldMatrix.identity();
 	//m_D3D->GetProjectionMatrix(projectionMatrix);
@@ -827,14 +874,31 @@ bool RenderToTexture()
 
 
 	// Set the render target to be the render to texture.
-	m_RenderTexture->SetRenderTarget(pImmediateContext, pDepthStencilView);
+	m_RenderTextureLeft->SetRenderTarget(pImmediateContext, pDepthStencilView);
 	//Clear the render to texture background to blue so we can differentiate it from the rest of the normal scene.
 
 		// Clear the render to texture.
-		m_RenderTexture->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
+		m_RenderTextureLeft->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene();
+	result = RenderScene(m_CameraLeft);
+	if (!result)
+	{
+		return false;
+	}
+
+	// Reset the render target back to the original back buffer and not the render to texture anymore.
+	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+
+	// Set the render target to be the render to texture.
+	m_RenderTextureRight->SetRenderTarget(pImmediateContext, pDepthStencilView);
+	//Clear the render to texture background to blue so we can differentiate it from the rest of the normal scene.
+
+		// Clear the render to texture.
+		m_RenderTextureRight->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
+
+	// Render the scene now and it will draw to the render to texture instead of the back buffer.
+	result = RenderScene(m_CameraRight);
 	if (!result)
 	{
 		return false;
@@ -867,10 +931,10 @@ void render_frame(void)
 	//m_Camera->SetPosition(0, 0, -10);
 
 	// Generate the view matrix based on the camera's position.
-	m_Camera->Render();
+	m_CameraLeft->Render();
 
 	// Get the world, view, and projection matrices from the camera and d3d objects.
-	m_Camera->GetViewMatrix(viewMatrix);
+	m_CameraLeft->GetViewMatrix(viewMatrix);
 	//m_D3D->GetWorldMatrix(worldMatrix);
 	worldMatrix.identity();
 	//m_D3D->GetProjectionMatrix(projectionMatrix);
@@ -895,7 +959,7 @@ void render_frame(void)
 
 	TurnZBufferOff();
 
-	result = m_DebugWindow->Render(pImmediateContext, 50, 50);
+	result = m_DebugWindowLeft->Render(pImmediateContext, 50, 50);
 	if (!result)
 	{
 		return;
@@ -904,13 +968,29 @@ void render_frame(void)
 	orthoMatrix = m_orthoMatrix;
 
 	// Render the debug window using the texture shader.
-	result = m_ColorShader->Render(pImmediateContext, m_DebugWindow->GetIndexCount(), worldMatrix, viewMatrix,
-		orthoMatrix, m_RenderTexture->GetShaderResourceView());
+	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowLeft->GetIndexCount(), worldMatrix, viewMatrix,
+		orthoMatrix, m_RenderTextureLeft->GetShaderResourceView());
 	if (!result)
 	{
 		return;
 	}
 
+
+	result = m_DebugWindowRight->Render(pImmediateContext, 400, 50);
+	if (!result)
+	{
+		return;
+	}
+
+	orthoMatrix = m_orthoMatrix;
+
+	// Render the debug window using the texture shader.
+	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowRight->GetIndexCount(), worldMatrix, viewMatrix,
+		orthoMatrix, m_RenderTextureRight->GetShaderResourceView());
+	if (!result)
+	{
+		return;
+	}
 
 	TurnZBufferOn();
 
@@ -950,10 +1030,10 @@ void clean(void)
 	}
 
 	// Release the camera object.
-	if(m_Camera)
+	if(m_CameraLeft)
 	{
-		delete m_Camera;
-		m_Camera = 0;
+		delete m_CameraLeft;
+		m_CameraLeft = 0;
 	}
 
 	if (pImmediateContext) pImmediateContext->ClearState();
