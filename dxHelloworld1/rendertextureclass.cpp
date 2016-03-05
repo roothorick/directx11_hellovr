@@ -140,3 +140,9 @@ ID3D11ShaderResourceView* RenderTextureClass::GetShaderResourceView()
 {
 	return m_shaderResourceView;
 }
+
+
+ID3D11Texture2D* RenderTextureClass::GetTexture()
+{
+	return m_renderTargetTexture;
+}

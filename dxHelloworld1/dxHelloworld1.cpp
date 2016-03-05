@@ -17,14 +17,14 @@
 #pragma comment (lib, "openvr_api.lib")
 
 #define MAX_LOADSTRING 100
-#define VR_DISABLED
+//#define VR_DISABLED
 
 // 全局变量: 
 HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
-UINT clientWidth = 800;
-UINT clientHeight = 600;
+UINT clientWidth = 1280;
+UINT clientHeight = 720;
 const float SCREEN_DEPTH = 1000.0f;
 const float SCREEN_NEAR = 0.1f;
 const float MOVE_STEP = 0.3f;
@@ -36,6 +36,7 @@ D3DXMATRIX m_orthoMatrix;
 // d3d global declarations
 ID3D11Device*			pDevice	= nullptr;
 ID3D11DeviceContext*	pImmediateContext = nullptr;
+ID3D11Texture2D*	pBackBufferTex;
 IDXGISwapChain*			pSwapChain = nullptr;
 ID3D11RenderTargetView*	pRenderTargetView = nullptr;
 ID3D11DepthStencilView* pDepthStencilView = nullptr;
@@ -68,6 +69,18 @@ Matrix4 m_mat4ProjectionRight;
 
 vr::IVRSystem *m_pHMD;
 vr::IVRRenderModels *m_pRenderModels;
+vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
+Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
+
+int m_iTrackedControllerCount;
+int m_iTrackedControllerCount_Last;
+int m_iValidPoseCount;
+int m_iValidPoseCount_Last;
+bool m_bShowCubes;
+
+std::string m_strPoseClasses;                            // what classes we saw poses for this frame
+char m_rDevClassChar[vr::k_unMaxTrackedDeviceCount];   // for each device, a character representing its class
+
 
 
 namespace Memory
@@ -135,23 +148,42 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DXHELLOWORLD1));
 
     MSG msg;
+	bool done, result;
 
-    // 主消息循环: 
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
 
-		render_frame();
-    }
+	// Initialize the message structure.
+	ZeroMemory(&msg, sizeof(MSG));
+
+	// Loop until there is a quit message from the window or the user.
+	done = false;
+	while (!done)
+	{
+		// Handle the windows messages.
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		// If windows signals to end the application then exit out.
+		if (msg.message == WM_QUIT)
+		{
+			done = true;
+		}
+		else
+		{
+			// Otherwise do the frame processing.
+			render_frame();
+		}
+
+	}
 
 	clean();
 
     return (int) msg.wParam;
 }
+
+
 
 void MyDebug(LPCWSTR msg)
 {
@@ -401,15 +433,75 @@ bool SetupStereoRenderTargets()
 	if (!m_pHMD)
 		return false;
 
-	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
+	//m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
 
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
+	//CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
+	//CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
 
 	return true;
 }
 
 #endif // ! VR_DISABLED
+
+void dprintf(const char *fmt, ...)
+{
+	va_list args;
+	char buffer[2048];
+
+	va_start(args, fmt);
+	vsprintf_s(buffer, fmt, args);
+	va_end(args);
+
+
+	OutputDebugStringA(buffer);
+}
+Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
+{
+	Matrix4 matrixObj(
+		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
+		matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
+		matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
+		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
+		);
+	return matrixObj;
+}
+
+void UpdateHMDMatrixPose()
+{
+	if (!m_pHMD)
+		return;
+
+	vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+
+	m_iValidPoseCount = 0;
+	m_strPoseClasses = "";
+	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
+	{
+		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
+		{
+			m_iValidPoseCount++;
+			m_rmat4DevicePose[nDevice] = ConvertSteamVRMatrixToMatrix4(m_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking);
+			if (m_rDevClassChar[nDevice] == 0)
+			{
+				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
+				{
+				case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
+				case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
+				case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
+				case vr::TrackedDeviceClass_Other:             m_rDevClassChar[nDevice] = 'O'; break;
+				case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
+				default:                                       m_rDevClassChar[nDevice] = '?'; break;
+				}
+			}
+			m_strPoseClasses += m_rDevClassChar[nDevice];
+		}
+	}
+
+	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
+	{
+		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
+	}
+}
 
 // this function initializes D3D and VR
 bool init(HWND hWnd)
@@ -438,6 +530,13 @@ bool init(HWND hWnd)
 		return false;
 	}
 
+	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
+
+	dprintf("width = %d, height = %d", m_nRenderWidth, m_nRenderHeight);
+
+	m_nRenderWidth /= 2;
+	m_nRenderHeight /= 4;
+
 
 	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
 	if (!m_pRenderModels)
@@ -450,6 +549,12 @@ bool init(HWND hWnd)
 		string temp(buf);
 		wstring wtemp(temp.begin(), temp.end());
 		MessageBox(hWnd, wtemp.c_str(), L"VR_Init Failed", NULL);
+		return false;
+	}
+
+	if (!vr::VRCompositor())
+	{
+		dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
 
@@ -515,7 +620,6 @@ bool init(HWND hWnd)
 
 	HRESULT result;
 	// CREATE RENDER TARGET VIEW
-	ID3D11Texture2D*	pBackBufferTex;
 	result = pSwapChain->GetBuffer(NULL, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBufferTex));
 	if (FAILED(result))
 	{
@@ -728,7 +832,7 @@ bool init(HWND hWnd)
 	}
 
 	// Initialize the render to texture object.
-	result = m_RenderTextureLeft->Initialize(pDevice, clientWidth, clientHeight);
+	result = m_RenderTextureLeft->Initialize(pDevice, m_nRenderWidth, m_nRenderHeight);
 	if (!result)
 	{
 		return false;
@@ -741,7 +845,7 @@ bool init(HWND hWnd)
 	}
 
 	// Initialize the render to texture object.
-	result = m_RenderTextureRight->Initialize(pDevice, clientWidth, clientHeight);
+	result = m_RenderTextureRight->Initialize(pDevice, m_nRenderWidth, m_nRenderHeight);
 	if (!result)
 	{
 		return false;
@@ -755,7 +859,7 @@ bool init(HWND hWnd)
 	}
 
 	// Initialize the debug window object.
-	result = m_DebugWindowLeft->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
+	result = m_DebugWindowLeft->Initialize(pDevice, clientWidth, clientHeight, clientWidth/2, clientHeight);
 	if (!result)
 	{
 		MessageBox(hWnd, L"Could not initialize the debug window object.", L"Error", MB_OK);
@@ -768,7 +872,7 @@ bool init(HWND hWnd)
 		return false;
 	}
 	// Initialize the debug window object.
-	result = m_DebugWindowRight->Initialize(pDevice, clientWidth, clientHeight, 300, 300);
+	result = m_DebugWindowRight->Initialize(pDevice, clientWidth, clientHeight, clientWidth/2, clientHeight);
 
 	// Setup the projection matrix.
 	float fieldOfView = (float)3.14159265359 / 4.0f;
@@ -782,7 +886,7 @@ bool init(HWND hWnd)
 
 	// Create an orthographic projection matrix for 2D rendering.
 	//D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
-	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)clientWidth, (float)clientHeight, SCREEN_NEAR, SCREEN_DEPTH);
+	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)m_nRenderWidth, (float)m_nRenderHeight, SCREEN_NEAR, SCREEN_DEPTH);
 	m_orthoMatrix.set((const float*)&mo.r);
 
 	SetupCameras();
@@ -888,7 +992,7 @@ bool RenderToTexture()
 	}
 
 	// Reset the render target back to the original back buffer and not the render to texture anymore.
-	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+	//pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
 
 	// Set the render target to be the render to texture.
 	m_RenderTextureRight->SetRenderTarget(pImmediateContext, pDepthStencilView);
@@ -976,7 +1080,7 @@ void render_frame(void)
 	}
 
 
-	result = m_DebugWindowRight->Render(pImmediateContext, 400, 50);
+	result = m_DebugWindowRight->Render(pImmediateContext, 640, 50);
 	if (!result)
 	{
 		return;
@@ -996,6 +1100,16 @@ void render_frame(void)
 
 
 	pSwapChain->Present(0, 0);
+
+
+	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::API_DirectX, vr::ColorSpace_Gamma };
+	vr::EVRCompositorError error1 =  vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+	vr::Texture_t rightEyeTexture = { m_RenderTextureRight->GetTexture(), vr::API_DirectX, vr::ColorSpace_Auto};
+	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+	if (error1)
+		dprintf("error is %d \n", error1);
+
+	UpdateHMDMatrixPose();
 	//// clear the window to a deep blue
 	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 40, 100), 1.0f, 0);
 
