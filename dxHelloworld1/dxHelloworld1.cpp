@@ -58,6 +58,8 @@ uint32_t m_nRenderHeight;
 
 float m_fNearClip;
 float m_fFarClip;
+float m_fScaleSpacing;
+float m_fScale;
 
 Matrix4 m_mat4HMDPose;
 Matrix4 m_mat4eyePosLeft;
@@ -385,6 +387,37 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+void dprintf(const char *fmt, ...)
+{
+	va_list args;
+	char buffer[2048];
+
+	va_start(args, fmt);
+	vsprintf_s(buffer, fmt, args);
+	va_end(args);
+
+
+	OutputDebugStringA(buffer);
+}
+
+string MatrixToString(const Matrix4& matrix)
+{
+	char buf[1000];
+	int start = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			start += sprintf_s(buf + start, ARRAYSIZE(buf) - start, "%.5f, ", matrix[j * 4 + i]);
+		}
+		start += sprintf_s(buf + start, ARRAYSIZE(buf) - start, "\n");
+	}
+
+	string temp(buf);
+	return temp;
+}
+
+
 Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 {
 	if (!m_pHMD)
@@ -422,11 +455,33 @@ void SetupCameras()
 	m_mat4ProjectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
 	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
 	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
+
+	dprintf("left = %s\n, right = %s\n", MatrixToString(m_mat4ProjectionLeft).c_str(),
+		MatrixToString(m_mat4ProjectionRight).c_str());
 }
 
 #ifndef  VR_DISABLED
 
 
+Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
+{
+	Matrix4 matMVP;
+	if (nEye == vr::Eye_Left)
+	{
+		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_mat4HMDPose;
+	}
+	else if (nEye == vr::Eye_Right)
+	{
+		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_mat4HMDPose;
+	}
+
+	dprintf("pleft = %s\n, eyeLeft = %s\n, hmdPose = %s\n",
+		MatrixToString(m_mat4ProjectionLeft).c_str(),
+		MatrixToString(m_mat4eyePosLeft).c_str(),
+		MatrixToString(m_mat4HMDPose).c_str());
+
+	return matMVP;
+}
 
 bool SetupStereoRenderTargets()
 {
@@ -443,18 +498,6 @@ bool SetupStereoRenderTargets()
 
 #endif // ! VR_DISABLED
 
-void dprintf(const char *fmt, ...)
-{
-	va_list args;
-	char buffer[2048];
-
-	va_start(args, fmt);
-	vsprintf_s(buffer, fmt, args);
-	va_end(args);
-
-
-	OutputDebugStringA(buffer);
-}
 Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
 {
 	Matrix4 matrixObj(
@@ -500,6 +543,10 @@ void UpdateHMDMatrixPose()
 	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
 	{
 		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
+	}
+	else
+	{
+		dprintf("pose not valid");
 	}
 }
 
@@ -889,6 +936,14 @@ bool init(HWND hWnd)
 	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)m_nRenderWidth, (float)m_nRenderHeight, SCREEN_NEAR, SCREEN_DEPTH);
 	m_orthoMatrix.set((const float*)&mo.r);
 
+
+
+	m_fScale = 0.3f;
+	m_fScaleSpacing = 4.0f;
+
+	m_fNearClip = 0.1f;
+	m_fFarClip = 30.0f;
+
 	SetupCameras();
 
 	if (!vr::VRCompositor())
@@ -936,22 +991,27 @@ void TurnZBufferOff()
 bool errorshown = false;
 unsigned frame_count = 0;
 
-bool RenderScene(CameraClass *camera)
+bool RenderScene(vr::Hmd_Eye nEye)
 {
 	bool result;
 	D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
 
-	//m_Camera->SetPosition(0, 0, -10);
+	////m_Camera->SetPosition(0, 0, -10);
 
-	// Generate the view matrix based on the camera's position.
-	camera->Render();
+	//// Generate the view matrix based on the camera's position.
+	//camera->Render();
 
-	// Get the world, view, and projection matrices from the camera and d3d objects.
-	camera->GetViewMatrix(viewMatrix);
-	//m_D3D->GetWorldMatrix(worldMatrix);
-	worldMatrix.identity();
-	//m_D3D->GetProjectionMatrix(projectionMatrix);
-	projectionMatrix = m_projectionMatrix;
+	//// Get the world, view, and projection matrices from the camera and d3d objects.
+	//camera->GetViewMatrix(viewMatrix);
+	////m_D3D->GetWorldMatrix(worldMatrix);
+	//worldMatrix.identity();
+	////m_D3D->GetProjectionMatrix(projectionMatrix);
+	//projectionMatrix = m_projectionMatrix;
+
+	projectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+	
+	string info = MatrixToString(projectionMatrix);
+	dprintf("%s\n", info.c_str());
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(pImmediateContext);
@@ -985,7 +1045,7 @@ bool RenderToTexture()
 		m_RenderTextureLeft->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene(m_CameraLeft);
+	result = RenderScene(vr::Hmd_Eye::Eye_Left);
 	if (!result)
 	{
 		return false;
@@ -1002,7 +1062,7 @@ bool RenderToTexture()
 		m_RenderTextureRight->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene(m_CameraRight);
+	result = RenderScene(vr::Hmd_Eye::Eye_Left);
 	if (!result)
 	{
 		return false;
@@ -1013,6 +1073,7 @@ bool RenderToTexture()
 
 	return true;
 }
+
 
 // this is the function used to render a single frame
 void render_frame(void)
