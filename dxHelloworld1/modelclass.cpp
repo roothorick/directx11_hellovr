@@ -193,7 +193,7 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 	//Matrix4 mat;
 	//AddCubeToScene(mat, vertices, indices);
 
-	float m_fScale = 1.0f;
+	float m_fScale = 0.3f;
 	float m_iSceneVolumeWidth = 20,
 		m_iSceneVolumeHeight = 20,
 		m_iSceneVolumeDepth = 20;

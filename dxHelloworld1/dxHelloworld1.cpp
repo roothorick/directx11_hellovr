@@ -807,8 +807,8 @@ bool init(HWND hWnd)
 	}
 
 	//VIEWPORT CREATION
-	viewport.Width = static_cast<float>(clientWidth);
-	viewport.Height = static_cast<float>(clientHeight);
+	viewport.Width = static_cast<float>(m_nRenderWidth);
+	viewport.Height = static_cast<float>(m_nRenderHeight);
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
 	viewport.MinDepth = 0.0f;
