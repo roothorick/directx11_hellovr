@@ -23,8 +23,8 @@
 HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
-UINT clientWidth = 1280;
-UINT clientHeight = 720;
+UINT clientWidth =  1280;
+UINT clientHeight =  720;
 const float SCREEN_DEPTH = 1000.0f;
 const float SCREEN_NEAR = 0.1f;
 const float MOVE_STEP = 0.3f;
@@ -247,7 +247,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    return TRUE;
 }
-
 void Move(float x, float y, float z = 0)
 {
 	Vector3 pos;
@@ -264,6 +263,7 @@ void Move(float x, float y, float z = 0)
 	pos.z += z * MOVE_STEP;
 
 	m_CameraRight->SetPosition(pos.x, pos.y, pos.z);
+
 }
 
 void Rotate(float x, float y)
@@ -439,7 +439,7 @@ Matrix4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
 	if (!m_pHMD)
 		return Matrix4();
 
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_OpenGL);
+	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_DirectX);
 
 	return Matrix4(
 		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
@@ -456,8 +456,8 @@ void SetupCameras()
 	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
 	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
 
-	dprintf("left = %s\n, right = %s\n", MatrixToString(m_mat4ProjectionLeft).c_str(),
-		MatrixToString(m_mat4ProjectionRight).c_str());
+	//dprintf("left = %s\n, right = %s\n", MatrixToString(m_mat4ProjectionLeft).c_str(),
+	//	MatrixToString(m_mat4ProjectionRight).c_str());
 }
 
 #ifndef  VR_DISABLED
@@ -475,10 +475,10 @@ Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_mat4HMDPose;
 	}
 
-	dprintf("pleft = %s\n, eyeLeft = %s\n, hmdPose = %s\n",
-		MatrixToString(m_mat4ProjectionLeft).c_str(),
-		MatrixToString(m_mat4eyePosLeft).c_str(),
-		MatrixToString(m_mat4HMDPose).c_str());
+	//dprintf("pleft = %s\n, eyeLeft = %s\n, hmdPose = %s\n",
+	//	MatrixToString(m_mat4ProjectionLeft).c_str(),
+	//	MatrixToString(m_mat4eyePosLeft).c_str(),
+	//	MatrixToString(m_mat4HMDPose).c_str());
 
 	return matMVP;
 }
@@ -581,8 +581,11 @@ bool init(HWND hWnd)
 
 	dprintf("width = %d, height = %d", m_nRenderWidth, m_nRenderHeight);
 
-	m_nRenderWidth /= 2;
-	m_nRenderHeight /= 4;
+	//m_nRenderWidth /= 2;
+	//m_nRenderHeight /= 4;
+
+	//clientWidth = m_nRenderWidth;
+	//clientHeight = m_nRenderHeight;
 
 
 	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
@@ -695,8 +698,8 @@ bool init(HWND hWnd)
 	ID3D11Texture2D* pDepthStencil = NULL;
 	D3D11_TEXTURE2D_DESC descDepth;
 	ZeroMemory(&descDepth, sizeof(descDepth));
-	descDepth.Width = swapDesc.BufferDesc.Width;
-	descDepth.Height = swapDesc.BufferDesc.Height;
+	descDepth.Width = m_nRenderWidth;// swapDesc.BufferDesc.Width;
+	descDepth.Height = m_nRenderHeight;// swapDesc.BufferDesc.Height;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;// DXGI_FORMAT_D32_FLOAT;//DXGI_FORMAT_D24_UNORM_S8_UINT;;//pDeviceSettings->d3d11.AutoDepthStencilFormat;
@@ -921,19 +924,19 @@ bool init(HWND hWnd)
 	// Initialize the debug window object.
 	result = m_DebugWindowRight->Initialize(pDevice, clientWidth, clientHeight, clientWidth/2, clientHeight);
 
-	// Setup the projection matrix.
-	float fieldOfView = (float)3.14159265359 / 4.0f;
-	float screenAspect = (float)clientWidth / (float)clientHeight;
+	//// Setup the projection matrix.
+	//float fieldOfView = (float)3.14159265359 / 4.0f;
+	//float screenAspect = (float)clientWidth / (float)clientHeight;
 
-	// Create the projection matrix for 3D rendering.
-	//D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
-	DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
-	m_projectionMatrix.set((const float*)&m.r);
+	//// Create the projection matrix for 3D rendering.
+	////D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
+	//DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
+	//m_projectionMatrix.set((const float*)&m.r);
 
 
 	// Create an orthographic projection matrix for 2D rendering.
 	//D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
-	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)m_nRenderWidth, (float)m_nRenderHeight, SCREEN_NEAR, SCREEN_DEPTH);
+	DirectX::XMMATRIX mo = DirectX::XMMatrixOrthographicLH((float)clientWidth, (float)clientHeight, 0, 10);
 	m_orthoMatrix.set((const float*)&mo.r);
 
 
@@ -1010,8 +1013,8 @@ bool RenderScene(vr::Hmd_Eye nEye)
 
 	projectionMatrix = GetCurrentViewProjectionMatrix(nEye);
 	
-	string info = MatrixToString(projectionMatrix);
-	dprintf("%s\n", info.c_str());
+	//string info = MatrixToString(projectionMatrix);
+	//dprintf("%s\n", info.c_str());
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(pImmediateContext);
@@ -1062,7 +1065,7 @@ bool RenderToTexture()
 		m_RenderTextureRight->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene(vr::Hmd_Eye::Eye_Left);
+	result = RenderScene(vr::Hmd_Eye::Eye_Right);
 	if (!result)
 	{
 		return false;
@@ -1088,43 +1091,43 @@ void render_frame(void)
 		return;
 	}
 
-	pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
-	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	/*pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
+	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);*/
 
 		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
 
-	//m_Camera->SetPosition(0, 0, -10);
+	////m_Camera->SetPosition(0, 0, -10);
 
-	// Generate the view matrix based on the camera's position.
-	m_CameraLeft->Render();
+	//// Generate the view matrix based on the camera's position.
+	//m_CameraLeft->Render();
 
-	// Get the world, view, and projection matrices from the camera and d3d objects.
-	m_CameraLeft->GetViewMatrix(viewMatrix);
-	//m_D3D->GetWorldMatrix(worldMatrix);
-	worldMatrix.identity();
-	//m_D3D->GetProjectionMatrix(projectionMatrix);
-	projectionMatrix = m_projectionMatrix;
-
-	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
-	m_Model->Render(pImmediateContext);
-
-	//// test code
-	//viewMatrix.identity();
-	//projectionMatrix.identity();
+	//// Get the world, view, and projection matrices from the camera and d3d objects.
+	//m_CameraLeft->GetViewMatrix(viewMatrix);
+	////m_D3D->GetWorldMatrix(worldMatrix);
 	//worldMatrix.identity();
-	// Render the model using the color shader.
-	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
-	if(!errorshown && !result)
-	{
-		errorshown = true;
-		//return false;
-		MyDebug(_T("render failed"));
-	}
+	////m_D3D->GetProjectionMatrix(projectionMatrix);
+	//projectionMatrix = m_projectionMatrix;
+
+	//// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+	//m_Model->Render(pImmediateContext);
+
+	////// test code
+	////viewMatrix.identity();
+	////projectionMatrix.identity();
+	////worldMatrix.identity();
+	//// Render the model using the color shader.
+	//result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
+	//if(!errorshown && !result)
+	//{
+	//	errorshown = true;
+	//	//return false;
+	//	MyDebug(_T("render failed"));
+	//}
 
 
 	TurnZBufferOff();
 
-	result = m_DebugWindowLeft->Render(pImmediateContext, 50, 50);
+	result = m_DebugWindowLeft->Render(pImmediateContext, 0, 0);
 	if (!result)
 	{
 		return;
@@ -1132,8 +1135,9 @@ void render_frame(void)
 
 	orthoMatrix = m_orthoMatrix;
 
+	Matrix4 identity;
 	// Render the debug window using the texture shader.
-	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowLeft->GetIndexCount(), worldMatrix, viewMatrix,
+	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowLeft->GetIndexCount(), identity, identity,
 		orthoMatrix, m_RenderTextureLeft->GetShaderResourceView());
 	if (!result)
 	{
@@ -1141,7 +1145,7 @@ void render_frame(void)
 	}
 
 
-	result = m_DebugWindowRight->Render(pImmediateContext, 640, 50);
+	result = m_DebugWindowRight->Render(pImmediateContext, 546, 0);
 	if (!result)
 	{
 		return;
@@ -1150,7 +1154,7 @@ void render_frame(void)
 	orthoMatrix = m_orthoMatrix;
 
 	// Render the debug window using the texture shader.
-	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowRight->GetIndexCount(), worldMatrix, viewMatrix,
+	result = m_ColorShader->Render(pImmediateContext, m_DebugWindowRight->GetIndexCount(), identity, identity,
 		orthoMatrix, m_RenderTextureRight->GetShaderResourceView());
 	if (!result)
 	{
@@ -1163,7 +1167,7 @@ void render_frame(void)
 	pSwapChain->Present(0, 0);
 
 
-	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::API_DirectX, vr::ColorSpace_Gamma };
+	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::API_DirectX, vr::ColorSpace_Auto};
 	vr::EVRCompositorError error1 =  vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 	vr::Texture_t rightEyeTexture = { m_RenderTextureRight->GetTexture(), vr::API_DirectX, vr::ColorSpace_Auto};
 	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);

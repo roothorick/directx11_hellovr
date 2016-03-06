@@ -222,6 +222,10 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 		mat = mat * Matrix4().translate(0, -((float)m_iSceneVolumeHeight) * m_fScaleSpacing, m_fScaleSpacing);
 	}
 
+	for (int i = 0; i < vertices.size() / 2; i++)
+	{
+		std::swap(vertices[i], vertices[vertices.size() - i - 1]);
+	}
 	// Set up the description of the static vertex buffer.
     vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
     vertexBufferDesc.ByteWidth = sizeof(VertexType) * vertices.size();
