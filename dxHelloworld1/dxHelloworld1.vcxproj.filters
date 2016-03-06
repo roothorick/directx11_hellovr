@@ -48,9 +48,6 @@
     <ClInclude Include="textureclass.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lodepng.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="openvr.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -81,9 +78,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="textureclass.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="lodepng.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="rendertextureclass.cpp">

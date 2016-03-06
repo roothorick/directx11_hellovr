@@ -33,7 +33,6 @@ D3DXMATRIX m_projectionMatrix;
 
 D3DXMATRIX m_orthoMatrix;
 
-// d3d global declarations
 ID3D11Device*			pDevice	= nullptr;
 ID3D11DeviceContext*	pImmediateContext = nullptr;
 ID3D11Texture2D*	pBackBufferTex;
@@ -243,45 +242,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
-   init(hWnd);
+   if (!init(hWnd))
+   {
+	   exit(0);
+   }
 
    return TRUE;
 }
-void Move(float x, float y, float z = 0)
-{
-	Vector3 pos;
-	pos = m_CameraLeft->GetPosition();
-	pos.x += x * MOVE_STEP;
-	pos.y += y * MOVE_STEP;
-	pos.z += z * MOVE_STEP;
-
-	m_CameraLeft->SetPosition(pos.x, pos.y, pos.z);
-
-	pos = m_CameraRight->GetPosition();
-	pos.x += x * MOVE_STEP;
-	pos.y += y * MOVE_STEP;
-	pos.z += z * MOVE_STEP;
-
-	m_CameraRight->SetPosition(pos.x, pos.y, pos.z);
-
-}
-
-void Rotate(float x, float y)
-{
-	Vector3 rot;
-	rot= m_CameraLeft->GetRotation();
-	rot.x += x*ROTATE_STEP;
-	rot.y += y*ROTATE_STEP;
-
-	m_CameraLeft->SetRotation(rot.x, rot.y, rot.z);
-
-	rot= m_CameraRight->GetRotation();
-	rot.x += x*ROTATE_STEP;
-	rot.y += y*ROTATE_STEP;
-
-	m_CameraRight->SetRotation(rot.x, rot.y, rot.z);
-}
-
 //
 //  º¯Êý: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -313,43 +280,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
-	case WM_KEYDOWN:
-		{
-			switch (wParam)
-			{
-				case VK_LEFT:
-					Move(-1, 0);
-					break;
-				case VK_RIGHT:
-					Move(1, 0);
-					break;
-				case VK_UP:
-					Move(0, 1);
-					break;
-				case VK_DOWN:
-					Move(0, -1);
-					break;
-				case 'W':
-					Move(0, 0, 1);
-					break;
-				case 'S':
-					Move(0, 0, -1);
-					break;
-				case 'Q':
-					Rotate(1, 0);
-					break;
-				case 'E':
-					Rotate(-1, 0);
-					break;
-				case 'A':
-					Rotate(0, -1);
-					break;
-				case 'D':
-					Rotate(0, 1);
-					break;
-			}
-		}
-		break;
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
@@ -460,8 +390,6 @@ void SetupCameras()
 	//	MatrixToString(m_mat4ProjectionRight).c_str());
 }
 
-#ifndef  VR_DISABLED
-
 
 Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 {
@@ -483,20 +411,6 @@ Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 	return matMVP;
 }
 
-bool SetupStereoRenderTargets()
-{
-	if (!m_pHMD)
-		return false;
-
-	//m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
-
-	//CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
-	//CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
-
-	return true;
-}
-
-#endif // ! VR_DISABLED
 
 Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
 {
@@ -692,7 +606,7 @@ bool init(HWND hWnd)
 	{
 		MyDebug(_T("ERROR"));
 	}
-	//Memory::SafeRelease(pBackBufferTex);
+	Memory::SafeRelease(pBackBufferTex);
 
 	// CREATE DEPTH STENCIL
 	ID3D11Texture2D* pDepthStencil = NULL;
@@ -771,11 +685,6 @@ bool init(HWND hWnd)
 		MyDebug(L"CreateDepthStencilView failed.");
 		return false;
 	}
-
-	//			 // Bind the depth stencil view
-	//pImmediateContext->OMSetRenderTargets(1,          // One rendertarget view
-	//	&pRTV,      // Render target view, created earlier
-	//	pDSV);     // Depth stencil view for the render target
 
 				   //BIND RENDER TARGET VIEW
 	pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView); // depth stencil view is for shadow map
@@ -924,15 +833,6 @@ bool init(HWND hWnd)
 	// Initialize the debug window object.
 	result = m_DebugWindowRight->Initialize(pDevice, clientWidth, clientHeight, clientWidth/2, clientHeight);
 
-	//// Setup the projection matrix.
-	//float fieldOfView = (float)3.14159265359 / 4.0f;
-	//float screenAspect = (float)clientWidth / (float)clientHeight;
-
-	//// Create the projection matrix for 3D rendering.
-	////D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
-	//DirectX::XMMATRIX m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_DEPTH);
-	//m_projectionMatrix.set((const float*)&m.r);
-
 
 	// Create an orthographic projection matrix for 2D rendering.
 	//D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
@@ -957,23 +857,6 @@ bool init(HWND hWnd)
 
 	return true;
 
-	//d3d = Direct3DCreate9(D3D_SDK_VERSION);    // create the Direct3D interface
-
-	//D3DPRESENT_PARAMETERS d3dpp;    // create a struct to hold various device information
-
-	//ZeroMemory(&d3dpp, sizeof(d3dpp));    // clear out the struct for use
-	//d3dpp.Windowed = TRUE;    // program windowed, not fullscreen
-	//d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;    // discard old frames
-	//d3dpp.hDeviceWindow = hWnd;    // set the window to be used by Direct3D
-
-
-	//							   // create a device class using this information and the info from the d3dpp stuct
-	//d3d->CreateDevice(D3DADAPTER_DEFAULT,
-	//	D3DDEVTYPE_HAL,
-	//	hWnd,
-	//	D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-	//	&d3dpp,
-	//	&d3ddev);
 }
 
 
@@ -992,37 +875,18 @@ void TurnZBufferOff()
 
 
 bool errorshown = false;
-unsigned frame_count = 0;
 
 bool RenderScene(vr::Hmd_Eye nEye)
 {
 	bool result;
 	D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
 
-	////m_Camera->SetPosition(0, 0, -10);
-
-	//// Generate the view matrix based on the camera's position.
-	//camera->Render();
-
-	//// Get the world, view, and projection matrices from the camera and d3d objects.
-	//camera->GetViewMatrix(viewMatrix);
-	////m_D3D->GetWorldMatrix(worldMatrix);
-	//worldMatrix.identity();
-	////m_D3D->GetProjectionMatrix(projectionMatrix);
-	//projectionMatrix = m_projectionMatrix;
 
 	projectionMatrix = GetCurrentViewProjectionMatrix(nEye);
 	
-	//string info = MatrixToString(projectionMatrix);
-	//dprintf("%s\n", info.c_str());
-
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(pImmediateContext);
 
-	//// test code
-	//viewMatrix.identity();
-	//projectionMatrix.identity();
-	//worldMatrix.identity();
 	// Render the model using the color shader.
 	result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
 	if (!errorshown && !result)
@@ -1054,8 +918,6 @@ bool RenderToTexture()
 		return false;
 	}
 
-	// Reset the render target back to the original back buffer and not the render to texture anymore.
-	//pImmediateContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
 
 	// Set the render target to be the render to texture.
 	m_RenderTextureRight->SetRenderTarget(pImmediateContext, pDepthStencilView);
@@ -1090,40 +952,8 @@ void render_frame(void)
 	{
 		return;
 	}
-
-	/*pImmediateContext->ClearRenderTargetView(pRenderTargetView, DirectX::Colors::CornflowerBlue);
-	pImmediateContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);*/
-
-		D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
-
-	////m_Camera->SetPosition(0, 0, -10);
-
-	//// Generate the view matrix based on the camera's position.
-	//m_CameraLeft->Render();
-
-	//// Get the world, view, and projection matrices from the camera and d3d objects.
-	//m_CameraLeft->GetViewMatrix(viewMatrix);
-	////m_D3D->GetWorldMatrix(worldMatrix);
-	//worldMatrix.identity();
-	////m_D3D->GetProjectionMatrix(projectionMatrix);
-	//projectionMatrix = m_projectionMatrix;
-
-	//// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
-	//m_Model->Render(pImmediateContext);
-
-	////// test code
-	////viewMatrix.identity();
-	////projectionMatrix.identity();
-	////worldMatrix.identity();
-	//// Render the model using the color shader.
-	//result = m_ColorShader->Render(pImmediateContext, m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
-	//if(!errorshown && !result)
-	//{
-	//	errorshown = true;
-	//	//return false;
-	//	MyDebug(_T("render failed"));
-	//}
-
+	
+	D3DXMATRIX orthoMatrix;
 
 	TurnZBufferOff();
 
@@ -1175,17 +1005,7 @@ void render_frame(void)
 		dprintf("error is %d \n", error1);
 
 	UpdateHMDMatrixPose();
-	//// clear the window to a deep blue
-	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 40, 100), 1.0f, 0);
 
-	//d3ddev->BeginScene();    // begins the 3D scene
-
-	//						 // do 3D rendering on the back buffer here
-
-	//d3ddev->EndScene();    // ends the 3D scene
-
-	//d3ddev->Present(NULL, NULL, NULL, NULL);   // displays the created frame on the screen
-	frame_count++;
 }
 
 
@@ -1222,7 +1042,13 @@ void clean(void)
 	Memory::SafeRelease(pImmediateContext);
 	Memory::SafeRelease(pDevice);
 
+	m_RenderTextureLeft->Shutdown();
+	m_RenderTextureRight->Shutdown();
+	m_DebugWindowLeft->Shutdown();
+	m_DebugWindowRight->Shutdown();
 
-	//d3ddev->Release();    // close and release the 3D device
-	//d3d->Release();    // close and release Direct3D
+	if (m_pHMD)
+	{
+		vr::VR_Shutdown();
+	}
 }

@@ -153,7 +153,6 @@
     <ClInclude Include="colorshaderclass.h" />
     <ClInclude Include="debugwindowclass.h" />
     <ClInclude Include="dxHelloworld1.h" />
-    <ClInclude Include="lodepng.h" />
     <ClInclude Include="Matrices.h" />
     <ClInclude Include="modelclass.h" />
     <ClInclude Include="openvr.h" />
@@ -178,10 +177,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="dxHelloworld1.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="lodepng.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Matrices.cpp">
