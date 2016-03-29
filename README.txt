@@ -10,6 +10,6 @@ This is a sample OpenVR program written with DirectX 11.
 
 
 Environment Requirement:
-Visual Studio 2015
+Visual Studio 2015, platform: x86
 
 
