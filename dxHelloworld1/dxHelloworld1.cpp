@@ -9,7 +9,7 @@
 #include "modelclass.h"
 #include "colorshaderclass.h"
 #include <DirectXMath.h>
-#include "openvr.h"
+#include "../openvr/headers/openvr.h"
 #include "rendertextureclass.h"
 #include "debugwindowclass.h"
 
@@ -368,8 +368,8 @@ Matrix4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
 {
 	if (!m_pHMD)
 		return Matrix4();
-
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_DirectX);
+	// TODO check here
+	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip);
 
 	return Matrix4(
 		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
@@ -445,7 +445,7 @@ void UpdateHMDMatrixPose()
 				case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
 				case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
 				case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
-				case vr::TrackedDeviceClass_Other:             m_rDevClassChar[nDevice] = 'O'; break;
+				case vr::TrackedDeviceClass_GenericTracker:    m_rDevClassChar[nDevice] = 'O'; break;
 				case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
 				default:                                       m_rDevClassChar[nDevice] = '?'; break;
 				}
@@ -500,7 +500,6 @@ bool init(HWND hWnd)
 
 	//clientWidth = m_nRenderWidth;
 	//clientHeight = m_nRenderHeight;
-
 
 	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
 	if (!m_pRenderModels)
@@ -997,9 +996,9 @@ void render_frame(void)
 	pSwapChain->Present(0, 0);
 
 
-	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::API_DirectX, vr::ColorSpace_Auto};
+	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::TextureType_DirectX, vr::ColorSpace_Auto};
 	vr::EVRCompositorError error1 =  vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-	vr::Texture_t rightEyeTexture = { m_RenderTextureRight->GetTexture(), vr::API_DirectX, vr::ColorSpace_Auto};
+	vr::Texture_t rightEyeTexture = { m_RenderTextureRight->GetTexture(), vr::TextureType_DirectX, vr::ColorSpace_Auto};
 	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 	if (error1)
 		dprintf("error is %d \n", error1);
