@@ -24,7 +24,7 @@ TextureClass::~TextureClass()
 }
 
 
-bool TextureClass::Initialize(ID3D11Device* device, WCHAR* filename)
+bool TextureClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* context, WCHAR* filename)
 {
 	//HRESULT result;
 
@@ -105,7 +105,7 @@ bool TextureClass::Initialize(ID3D11Device* device, WCHAR* filename)
 	//result = device->CreateShaderResourceView(texture, &shaderResourceViewDesc, &m_texture);
 
 	
-	result = DirectX::CreateWICTextureFromFile(device, wsFileName.c_str(), nullptr, &m_texture);
+	result = DirectX::CreateWICTextureFromFile(device, context, wsFileName.c_str(), nullptr, &m_texture);
 	if (FAILED(result))
 	{
 		return false;
