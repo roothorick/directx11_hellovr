@@ -3,6 +3,8 @@ This software is copyrighted to HTC Corporation.
 
 Author: James Xiong
 Email: james_xiong@htc.com
+
+CREDITS: spazzarama, obl-dgalloway
 -----
 
 What's this?
