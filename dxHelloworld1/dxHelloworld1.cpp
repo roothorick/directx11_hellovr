@@ -9,12 +9,12 @@
 #include "modelclass.h"
 #include "colorshaderclass.h"
 #include <DirectXMath.h>
-#include "../openvr/headers/openvr.h"
+// #include "../openvr/headers/openvr.h"
 #include "rendertextureclass.h"
 #include "debugwindowclass.h"
 
 #pragma comment (lib, "d3d11.lib")
-#pragma comment (lib, "openvr_api.lib")
+// #pragma comment (lib, "openvr_api.lib")
 
 #define MAX_LOADSTRING 100
 //#define VR_DISABLED
@@ -52,8 +52,11 @@ RenderTextureClass* m_RenderTextureLeft, *m_RenderTextureRight;
 DebugWindowClass* m_DebugWindowLeft, *m_DebugWindowRight;
 
 
-uint32_t m_nRenderWidth;
-uint32_t m_nRenderHeight;
+//uint32_t m_nRenderWidth;
+//uint32_t m_nRenderHeight;
+const uint32_t m_nRenderWidth = 1512;
+const uint32_t m_nRenderHeight = 1680;
+
 
 float m_fNearClip;
 float m_fFarClip;
@@ -68,9 +71,11 @@ Matrix4 m_mat4ProjectionCenter;
 Matrix4 m_mat4ProjectionLeft;
 Matrix4 m_mat4ProjectionRight;
 
-vr::IVRSystem *m_pHMD;
-vr::IVRRenderModels *m_pRenderModels;
-vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
+namespace vr { const unsigned int k_unMaxTrackedDeviceCount = 16; }
+
+// vr::IVRSystem *m_pHMD;
+// vr::IVRRenderModels *m_pRenderModels;
+// vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 
 int m_iTrackedControllerCount;
@@ -348,12 +353,13 @@ string MatrixToString(const Matrix4& matrix)
 }
 
 
-Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
+//Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
+Matrix4 GetHMDMatrixPoseEye()
 {
-	if (!m_pHMD)
+	// if (!m_pHMD)
 		return Matrix4();
 
-	vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
+	/* vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
 	Matrix4 matrixObj(
 		matEyeRight.m[0][0], matEyeRight.m[1][0], matEyeRight.m[2][0], 0.0,
 		matEyeRight.m[0][1], matEyeRight.m[1][1], matEyeRight.m[2][1], 0.0,
@@ -361,39 +367,46 @@ Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 		matEyeRight.m[0][3], matEyeRight.m[1][3], matEyeRight.m[2][3], 1.0f
 		);
 
-	return matrixObj.invert();
+	return matrixObj.invert(); */
 }
 
-Matrix4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
+//Matrix4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
+Matrix4 GetHMDMatrixProjectionEye()
 {
-	if (!m_pHMD)
+	// if (!m_pHMD)
 		return Matrix4();
 	// TODO check here
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip);
+	/* vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip);
 
 	return Matrix4(
 		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
 		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
 		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
 		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
-		);
+		); */
 }
 
 void SetupCameras()
 {
-	m_mat4ProjectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
+	/* m_mat4ProjectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
 	m_mat4ProjectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
 	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
-	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
+	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right); */
+	m_mat4ProjectionLeft = GetHMDMatrixProjectionEye();
+	m_mat4ProjectionRight = GetHMDMatrixProjectionEye();
+	m_mat4eyePosLeft = GetHMDMatrixPoseEye();
+	m_mat4eyePosRight = GetHMDMatrixPoseEye();
+
 
 	//dprintf("left = %s\n, right = %s\n", MatrixToString(m_mat4ProjectionLeft).c_str(),
 	//	MatrixToString(m_mat4ProjectionRight).c_str());
 }
 
 
-Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
+//Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
+Matrix4 GetCurrentViewProjectionMatrix()
 {
-	Matrix4 matMVP;
+	/*Matrix4 matMVP;
 	if (nEye == vr::Eye_Left)
 	{
 		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_mat4HMDPose;
@@ -408,11 +421,12 @@ Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 	//	MatrixToString(m_mat4eyePosLeft).c_str(),
 	//	MatrixToString(m_mat4HMDPose).c_str());
 
-	return matMVP;
+	return matMVP;*/
+	return Matrix4();
 }
 
 
-Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
+/*Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
 {
 	Matrix4 matrixObj(
 		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
@@ -421,20 +435,20 @@ Matrix4 ConvertSteamVRMatrixToMatrix4( const vr::HmdMatrix34_t &matPose )
 		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
 		);
 	return matrixObj;
-}
+}*/
 
 void UpdateHMDMatrixPose()
 {
-	if (!m_pHMD)
+	/*if (!m_pHMD)
 		return;
 
-	vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+	vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);*/
 
 	m_iValidPoseCount = 0;
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
+		/*if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
 		{
 			m_iValidPoseCount++;
 			m_rmat4DevicePose[nDevice] = ConvertSteamVRMatrixToMatrix4(m_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking);
@@ -451,17 +465,18 @@ void UpdateHMDMatrixPose()
 				}
 			}
 			m_strPoseClasses += m_rDevClassChar[nDevice];
-		}
+		}*/
+		m_rmat4DevicePose[nDevice] = Matrix4();
 	}
 
-	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
+	/*if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
 	{
 		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
 	}
 	else
 	{
 		dprintf("pose not valid");
-	}
+	}*/
 }
 
 // this function initializes D3D and VR
@@ -476,7 +491,7 @@ bool init(HWND hWnd)
 #ifndef VR_DISABLED
 
 	// Loading the SteamVR Runtime
-	vr::EVRInitError eError = vr::VRInitError_None;
+	/* vr::EVRInitError eError = vr::VRInitError_None;
 
 	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
 
@@ -519,7 +534,7 @@ bool init(HWND hWnd)
 	{
 		dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
-	}
+	}*/
 
 #endif
 
@@ -848,11 +863,11 @@ bool init(HWND hWnd)
 
 	SetupCameras();
 
-	if (!vr::VRCompositor())
+	/*if (!vr::VRCompositor())
 	{
 		printf("Compositor initialization failed. See log file for details\n");
 		return false;
-	}
+	}*/
 
 	return true;
 
@@ -875,13 +890,15 @@ void TurnZBufferOff()
 
 bool errorshown = false;
 
-bool RenderScene(vr::Hmd_Eye nEye)
+//bool RenderScene(vr::Hmd_Eye nEye)
+bool RenderScene()
 {
 	bool result;
 	D3DXMATRIX viewMatrix, projectionMatrix, worldMatrix, orthoMatrix;
 
 
-	projectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+	//projectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+	projectionMatrix = GetCurrentViewProjectionMatrix();
 	
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(pImmediateContext);
@@ -911,7 +928,8 @@ bool RenderToTexture()
 		m_RenderTextureLeft->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene(vr::Hmd_Eye::Eye_Left);
+	//result = RenderScene(vr::Hmd_Eye::Eye_Left);
+	result = RenderScene();
 	if (!result)
 	{
 		return false;
@@ -926,7 +944,8 @@ bool RenderToTexture()
 		m_RenderTextureRight->ClearRenderTarget(pImmediateContext, pDepthStencilView, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Render the scene now and it will draw to the render to texture instead of the back buffer.
-	result = RenderScene(vr::Hmd_Eye::Eye_Right);
+	//result = RenderScene(vr::Hmd_Eye::Eye_Right);
+	result = RenderScene();
 	if (!result)
 	{
 		return false;
@@ -996,12 +1015,12 @@ void render_frame(void)
 	pSwapChain->Present(0, 0);
 
 
-	vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::TextureType_DirectX, vr::ColorSpace_Auto};
+	/*vr::Texture_t leftEyeTexture = { m_RenderTextureLeft->GetTexture(), vr::TextureType_DirectX, vr::ColorSpace_Auto};
 	vr::EVRCompositorError error1 =  vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 	vr::Texture_t rightEyeTexture = { m_RenderTextureRight->GetTexture(), vr::TextureType_DirectX, vr::ColorSpace_Auto};
 	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 	if (error1)
-		dprintf("error is %d \n", error1);
+		dprintf("error is %d \n", error1);*/
 
 	UpdateHMDMatrixPose();
 
@@ -1046,8 +1065,8 @@ void clean(void)
 	m_DebugWindowLeft->Shutdown();
 	m_DebugWindowRight->Shutdown();
 
-	if (m_pHMD)
+	/*if (m_pHMD)
 	{
 		vr::VR_Shutdown();
-	}
+	}*/
 }
