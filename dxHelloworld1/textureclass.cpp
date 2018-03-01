@@ -61,11 +61,11 @@ bool TextureClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* context
 		return false;
 	}
 
-	std::ostrstream strout;
+	/*std::ostrstream strout;
 	strout << nImageWidth << ", " << nImageHeight << ", arr_size = " << imageRGBA.size();
 	std::string str = strout.str();
 	std::wstring debug_info(str.begin(), str.end());
-	MessageBox(NULL, debug_info.c_str(), L"", 0);
+	MessageBox(NULL, debug_info.c_str(), L"", 0);*/
 
 	//for (int i = 0; i < ARRAYSIZE(pixels); i++)
 	//	pixels[i] = pixels[i%3];
