@@ -57,6 +57,9 @@
     <ClInclude Include="rendertextureclass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lodepng.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -86,6 +89,9 @@
     <ClCompile Include="debugwindowclass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lodepng.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="dxHelloworld1.rc">
@@ -107,6 +113,5 @@
     <None Include="texture.ps">
       <Filter>Resources Files</Filter>
     </None>
-    <None Include="..\openvr\bin\win32\openvr_api.dll" />
   </ItemGroup>
 </Project>
