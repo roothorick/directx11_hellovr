@@ -1,4 +1,4 @@
-// dxHelloworld1.cpp : 땍屢壇痰넋埼돨흙왯듐。
+// dxHelloworld1.cpp : 定义应用程序的入口点。
 //
 
 #include "stdafx.h"
@@ -19,10 +19,10 @@
 #define MAX_LOADSTRING 100
 //#define VR_DISABLED
 
-// 홍애긴좆: 
-HINSTANCE hInst;                                // 뎠품茄절
-WCHAR szTitle[MAX_LOADSTRING];                  // 깃痙으匡굶
-WCHAR szWindowClass[MAX_LOADSTRING];            // 寮눗왯잚츰
+// 全局变量: 
+HINSTANCE hInst;                                // 当前实例
+WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
+WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 UINT clientWidth =  1280;
 UINT clientHeight =  720;
 const float SCREEN_DEPTH = 1000.0f;
@@ -119,7 +119,7 @@ namespace Memory
 	}
 }
 
-// 늪덜쯤친욥櫓관벵돨변鑒돨품蕨�荷�: 
+// 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -138,14 +138,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: 瞳늪렴零덜쯤。
+    // TODO: 在此放置代码。
 
-    // 놓迦뺏홍애俚륜눔
+    // 初始化全局字符串
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_DXHELLOWORLD1, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // 獵契壇痰넋埼놓迦뺏: 
+    // 执行应用程序初始化: 
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
@@ -197,9 +197,9 @@ void MyDebug(LPCWSTR msg)
 }
 
 //
-//  변鑒: MyRegisterClass()
+//  函数: MyRegisterClass()
 //
-//  커돨: 鬧꿍눗왯잚。
+//  目的: 注册窗口类。
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
@@ -223,18 +223,18 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 //
-//   변鑒: InitInstance(HINSTANCE, int)
+//   函数: InitInstance(HINSTANCE, int)
 //
-//   커돨: 괏닸茄절얌깨깻눼쉔寮눗왯
+//   目的: 保存实例句柄并创建主窗口
 //
-//   鬧姦: 
+//   注释: 
 //
-//        瞳늪변鑒櫓，乖쳬瞳홍애긴좆櫓괏닸茄절얌깨깻
-//        눼쉔뵨鞫刻寮넋埼눗왯。
+//        在此函数中，我们在全局变量中保存实例句柄并
+//        创建和显示主程序窗口。
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // 쉥茄절얌깨닸뇨瞳홍애긴좆櫓
+   hInst = hInstance; // 将实例句柄存储在全局变量中
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, clientWidth, clientHeight, nullptr, nullptr, hInstance, nullptr);
@@ -255,13 +255,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 //
-//  변鑒: WndProc(HWND, UINT, WPARAM, LPARAM)
+//  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
-//  커돨:    뇹잿寮눗왯돨句口。
+//  目的:    处理主窗口的消息。
 //
-//  WM_COMMAND  - 뇹잿壇痰넋埼꽉데
-//  WM_PAINT    - 삥齡寮눗왯
-//  WM_DESTROY  - 랙箇藁놔句口깻럿쀼
+//  WM_COMMAND  - 处理应用程序菜单
+//  WM_PAINT    - 绘制主窗口
+//  WM_DESTROY  - 发送退出消息并返回
 //
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -271,7 +271,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
-            // 롸驕꽉데朞嶝: 
+            // 分析菜单选择: 
             switch (wmId)
             {
             case IDM_ABOUT:
@@ -289,7 +289,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 瞳늪뇹警속賈痰 hdc 돨훨부삥暠덜쯤...
+            // TODO: 在此处添加使用 hdc 的任何绘图代码...
             EndPaint(hWnd, &ps);
         }
         break;
@@ -302,7 +302,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// “밑黨”움돨句口뇹잿넋埼。
+// “关于”框的消息处理程序。
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
