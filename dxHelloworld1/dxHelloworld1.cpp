@@ -1,4 +1,4 @@
-// dxHelloworld1.cpp : ¶¨ÒåÓ¦ÓÃ³ÌÐòµÄÈë¿Úµã¡£
+// dxHelloworld1.cpp : ë•ï¥‹å£‡ç—°ë„‹åŸ¼ë¨í™ì™¯ë“ã€‚
 //
 
 #include "stdafx.h"
@@ -19,10 +19,10 @@
 #define MAX_LOADSTRING 100
 //#define VR_DISABLED
 
-// È«¾Ö±äÁ¿: 
-HINSTANCE hInst;                                // µ±Ç°ÊµÀý
-WCHAR szTitle[MAX_LOADSTRING];                  // ±êÌâÀ¸ÎÄ±¾
-WCHAR szWindowClass[MAX_LOADSTRING];            // Ö÷´°¿ÚÀàÃû
+// í™ì• ê¸´ì¢†: 
+HINSTANCE hInst;                                // ëŽ í’ˆèŒ„ì ˆ
+WCHAR szTitle[MAX_LOADSTRING];                  // ê¹ƒç—™ìœ¼åŒ¡êµ¶
+WCHAR szWindowClass[MAX_LOADSTRING];            // å¯®ëˆ—ì™¯ìžšì¸°
 UINT clientWidth =  1280;
 UINT clientHeight =  720;
 const float SCREEN_DEPTH = 1000.0f;
@@ -119,7 +119,7 @@ namespace Memory
 	}
 }
 
-// ´Ë´úÂëÄ£¿éÖÐ°üº¬µÄº¯ÊýµÄÇ°ÏòÉùÃ÷: 
+// ëŠªëœì¯¤ì¹œìš¥æ«“ê´€ë²µë¨ë³€é‘’ë¨í’ˆè•¨ï¿½è·ï¿½: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -138,14 +138,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: ÔÚ´Ë·ÅÖÃ´úÂë¡£
+    // TODO: çž³ëŠªë ´é›¶ëœì¯¤ã€‚
 
-    // ³õÊ¼»¯È«¾Ö×Ö·û´®
+    // ë†“è¿¦ëºí™ì• ä¿šë¥œëˆ”
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_DXHELLOWORLD1, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // Ö´ÐÐÓ¦ÓÃ³ÌÐò³õÊ¼»¯: 
+    // çµï¤‰å£‡ç—°ë„‹åŸ¼ë†“è¿¦ëº: 
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
@@ -197,9 +197,9 @@ void MyDebug(LPCWSTR msg)
 }
 
 //
-//  º¯Êý: MyRegisterClass()
+//  ë³€é‘’: MyRegisterClass()
 //
-//  Ä¿µÄ: ×¢²á´°¿ÚÀà¡£
+//  ì»¤ë¨: é¬§ê¿ëˆ—ì™¯ìžšã€‚
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
@@ -223,18 +223,18 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 //
-//   º¯Êý: InitInstance(HINSTANCE, int)
+//   ë³€é‘’: InitInstance(HINSTANCE, int)
 //
-//   Ä¿µÄ: ±£´æÊµÀý¾ä±ú²¢´´½¨Ö÷´°¿Ú
+//   ì»¤ë¨: ê´ë‹¸èŒ„ì ˆì–Œê¹¨ê¹»ëˆ¼ì‰”å¯®ëˆ—ì™¯
 //
-//   ×¢ÊÍ: 
+//   é¬§å§¦: 
 //
-//        ÔÚ´Ëº¯ÊýÖÐ£¬ÎÒÃÇÔÚÈ«¾Ö±äÁ¿ÖÐ±£´æÊµÀý¾ä±ú²¢
-//        ´´½¨ºÍÏÔÊ¾Ö÷³ÌÐò´°¿Ú¡£
+//        çž³ëŠªë³€é‘’æ«“ï¼Œä¹–ì³¬çž³í™ì• ê¸´ì¢†æ«“ê´ë‹¸èŒ„ì ˆì–Œê¹¨ê¹»
+//        ëˆ¼ì‰”ëµ¨éž«åˆ»å¯®ë„‹åŸ¼ëˆ—ì™¯ã€‚
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // ½«ÊµÀý¾ä±ú´æ´¢ÔÚÈ«¾Ö±äÁ¿ÖÐ
+   hInst = hInstance; // ì‰¥èŒ„ì ˆì–Œê¹¨ë‹¸ë‡¨çž³í™ì• ê¸´ì¢†æ«“
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, clientWidth, clientHeight, nullptr, nullptr, hInstance, nullptr);
@@ -255,13 +255,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 //
-//  º¯Êý: WndProc(HWND, UINT, WPARAM, LPARAM)
+//  ë³€é‘’: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
-//  Ä¿µÄ:    ´¦ÀíÖ÷´°¿ÚµÄÏûÏ¢¡£
+//  ì»¤ë¨:    ë‡¹ìž¿å¯®ëˆ—ì™¯ë¨ï¤†å£ã€‚
 //
-//  WM_COMMAND  - ´¦ÀíÓ¦ÓÃ³ÌÐò²Ëµ¥
-//  WM_PAINT    - »æÖÆÖ÷´°¿Ú
-//  WM_DESTROY  - ·¢ËÍÍË³öÏûÏ¢²¢·µ»Ø
+//  WM_COMMAND  - ë‡¹ìž¿å£‡ç—°ë„‹åŸ¼ê½‰ë°
+//  WM_PAINT    - ì‚¥é½¡å¯®ëˆ—ì™¯
+//  WM_DESTROY  - ëž™ç®‡è—ë†”ï¤†å£ê¹»ëŸ¿ì€¼
 //
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -271,7 +271,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
-            // ·ÖÎö²Ëµ¥Ñ¡Ôñ: 
+            // ë¡¸é©•ê½‰ë°æœžå¶: 
             switch (wmId)
             {
             case IDM_ABOUT:
@@ -289,7 +289,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: ÔÚ´Ë´¦Ìí¼ÓÊ¹ÓÃ hdc µÄÈÎºÎ»æÍ¼´úÂë...
+            // TODO: çž³ëŠªë‡¹è­¦ì†è³ˆç—° hdc ë¨í›¨ë¶€ì‚¥æš ëœì¯¤...
             EndPaint(hWnd, &ps);
         }
         break;
@@ -302,7 +302,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// ¡°¹ØÓÚ¡±¿òµÄÏûÏ¢´¦Àí³ÌÐò¡£
+// â€œë°‘é»¨â€ì›€ë¨ï¤†å£ë‡¹ìž¿ë„‹åŸ¼ã€‚
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
