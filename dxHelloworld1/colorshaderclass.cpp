@@ -2,7 +2,7 @@
 // Filename: colorshaderclass.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "colorshaderclass.h"
-#include "D3DCompiler.h"
+#include "d3dcompiler.h"
 
 #pragma comment (lib, "d3dcompiler.lib")
 
